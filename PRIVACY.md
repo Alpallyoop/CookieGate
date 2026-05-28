@@ -1,9 +1,7 @@
 
-## CookieGate Privacy Policy
+# CookieGate Privacy Policy
 
----
-
-# Effective date: 2026-05-26
+## Effective date: 2026-05-26
 
 ---
 
