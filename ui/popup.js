@@ -464,7 +464,12 @@
   }
 
   function renderHeader(){
-    byId("statusPill").innerHTML = "<span></span> READY - " + state.cookies.length + " cookies";
+    var statusPill = byId("statusPill");
+    if(statusPill){
+      statusPill.textContent = "";
+      statusPill.appendChild(document.createElement("span"));
+      statusPill.appendChild(document.createTextNode(" READY - " + state.cookies.length + " cookies"));
+    }
     byId("siteLine").textContent = "Site: " + safe(state.site);
     byId("urlLine").textContent = state.url || "";
     byId("globalStat").textContent = formatModeLabel(state.globalMode);
@@ -482,7 +487,11 @@
     var root = byId("cookiesList");
 
     if(!state.cookies.length){
-      root.innerHTML = '<div class="cg-empty">' + (state.site && state.site !== "-" ? "No cookies found for this site." : "No inspection run yet.") + '</div>';
+      root.textContent = "";
+      var emptyCookies = document.createElement("div");
+      emptyCookies.className = "cg-empty";
+      emptyCookies.textContent = state.site && state.site !== "-" ? "No cookies found for this site." : "No inspection run yet.";
+      root.appendChild(emptyCookies);
       return;
     }
 
@@ -560,7 +569,11 @@
     var list = evidenceForTab();
 
     if(!list.length){
-      root.innerHTML = '<div class="cg-empty">No evidence for this view yet.</div>';
+      root.textContent = "";
+      var emptyEvidence = document.createElement("div");
+      emptyEvidence.className = "cg-empty";
+      emptyEvidence.textContent = "No evidence for this view yet.";
+      root.appendChild(emptyEvidence);
       return;
     }
 
@@ -1863,7 +1876,11 @@
     const statusPill = document.getElementById("statusPill");
 
     if(siteLine) siteLine.textContent = "Site: Browser Observer";
-    if(statusPill) statusPill.innerHTML = "<span></span> BROWSER OBSERVER";
+    if(statusPill){
+      statusPill.textContent = "";
+      statusPill.appendChild(document.createElement("span"));
+      statusPill.appendChild(document.createTextNode(" BROWSER OBSERVER"));
+    }
 
     if(window.CookieGateCaptureBrowserObserver && !window.CookieGateBrowserObserverLast){
       window.CookieGateCaptureBrowserObserver(true);
@@ -3429,7 +3446,12 @@
       el = document.createElement("div");
       el.id = "cgActiveUnavailableToast";
       el.className = "cg-toast";
-      el.innerHTML = "<b>Active Site unavailable.</b><br>Open a website tab to inspect site cookies.";
+      el.textContent = "";
+      var activeUnavailableStrong = document.createElement("b");
+      activeUnavailableStrong.textContent = "Active Site unavailable.";
+      el.appendChild(activeUnavailableStrong);
+      el.appendChild(document.createElement("br"));
+      el.appendChild(document.createTextNode("Open a website tab to inspect site cookies."));
       document.body.appendChild(el);
     }
 
