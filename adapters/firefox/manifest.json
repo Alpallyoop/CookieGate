@@ -1,0 +1,47 @@
+{
+    "manifest_version":  3,
+    "name":  "CookieGate",
+    "version":  "0.1.0",
+    "description":  "Deterministic browser state governance engine",
+    "browser_specific_settings":  {
+                                      "gecko":  {
+                                                    "id":  "cookiegate@local.dev",
+                                                    "strict_min_version":  "121.0"
+                                                }
+                                  },
+    "permissions":  [
+                        "cookies",
+                        "browsingData",
+                        "storage",
+                        "tabs",
+                        "activeTab"
+                    ],
+    "host_permissions":  [
+                             "\u003call_urls\u003e"
+                         ],
+    "background":  {
+                       "scripts":  [
+                                       "background/background.firefox.js"
+                                   ]
+                   },
+    "action":  {
+                   "default_popup":  "ui/popup.html",
+                   "default_title":  "CookieGate",
+                   "default_icon":  {
+                                        "16":  "icons/cookiegate_16.png",
+                                        "32":  "icons/cookiegate_32.png",
+                                        "48":  "icons/cookiegate_48.png",
+                                        "64":  "icons/cookiegate_64.png",
+                                        "128":  "icons/cookiegate_128.png",
+                                        "256":  "icons/cookiegate_256.png"
+                                    }
+               },
+    "icons":  {
+                  "16":  "icons/cookiegate_16.png",
+                  "32":  "icons/cookiegate_32.png",
+                  "48":  "icons/cookiegate_48.png",
+                  "64":  "icons/cookiegate_64.png",
+                  "128":  "icons/cookiegate_128.png",
+                  "256":  "icons/cookiegate_256.png"
+              }
+}

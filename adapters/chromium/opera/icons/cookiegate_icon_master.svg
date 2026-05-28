@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="CookieGate icon">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#171b24"/>
+      <stop offset="1" stop-color="#05070c"/>
+    </linearGradient>
+    <linearGradient id="shield" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#343a46"/>
+      <stop offset="1" stop-color="#0b0f16"/>
+    </linearGradient>
+    <linearGradient id="cookie" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffd27c"/>
+      <stop offset="1" stop-color="#bf7528"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="512" height="512" rx="92" fill="url(#bg)"/>
+  <path d="M256 45 C315 86 379 103 421 108 L421 295 C421 365 326 434 256 466 C186 434 91 365 91 295 L91 108 C133 103 197 86 256 45 Z" fill="url(#shield)" stroke="#5c6370" stroke-width="24" stroke-linejoin="round"/>
+  <circle cx="256" cy="256" r="139" fill="url(#cookie)" stroke="#8a5019" stroke-width="7"/>
+  <g fill="#4b2714" stroke="#241108" stroke-width="4">
+    <circle cx="202" cy="191" r="28"/>
+    <circle cx="302" cy="160" r="18"/>
+    <circle cx="331" cy="238" r="25"/>
+    <circle cx="181" cy="302" r="18"/>
+    <circle cx="267" cy="350" r="23"/>
+    <circle cx="369" cy="313" r="17"/>
+    <circle cx="140" cy="247" r="23"/>
+  </g>
+  <g stroke="#e5232a" stroke-width="54" stroke-linecap="round">
+    <line x1="132" y1="132" x2="380" y2="380"/>
+    <line x1="380" y1="132" x2="132" y2="380"/>
+  </g>
+</svg>

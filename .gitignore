@@ -1,0 +1,26 @@
+# CookieGate local/generated artifacts
+dist/
+release/
+submit/
+proofs/
+node_modules/
+coverage/
+.tmp/
+.cache/
+
+# Packages / archives
+*.zip
+*.crx
+*.pem
+
+# Local/editor/system
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Environment/secrets
+.env
+.env.*
+*.local
+secrets/

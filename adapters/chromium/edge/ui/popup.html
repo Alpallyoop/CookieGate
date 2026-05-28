@@ -1,0 +1,130 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>CookieGate</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main class="cg-shell">
+    <section class="cg-header">
+      <div>
+        <h1>CookieGate</h1>
+        <div id="siteLine" class="cg-site">Site: -</div>
+        <div id="urlLine" class="cg-url"></div>
+      </div>
+      <div id="statusPill" class="cg-status"><span></span> READY</div>
+    </section>
+
+    <section class="cg-stats">
+      <div class="cg-stat"><label>Global</label><strong id="globalStat">-</strong></div>
+      <div class="cg-stat"><label>Site</label><strong id="siteStat">-</strong></div>
+      <div class="cg-stat"><label>Effective</label><strong id="effectiveStat">-</strong></div>
+      <div class="cg-stat"><label>Tracked Tabs</label><strong id="trackedTabsStat">-</strong></div>
+    </section>
+
+    <section class="cg-actions">
+      <button id="inspectBtn" class="cg-btn cg-primary">Inspect Cookies</button>
+      <button id="wipeBtn" class="cg-btn cg-danger">Wipe Site Now</button>
+    </section>
+
+    <section class="cg-card cg-mode-card">
+      <div class="cg-section-head">
+        <h2>Mode Controls</h2>
+        <p>Mode choices are saved for this browser/site.</p>
+      </div>
+
+      <div class="cg-mode-grid">
+        <label class="cg-select-block">
+          <span>Global Mode</span>
+          <select id="globalModeSelect">
+            <option value="strict">Strict</option>
+            <option value="balanced">Balanced</option>
+            <option value="trusted">Trusted</option>
+          </select>
+        </label>
+
+        <label class="cg-select-block">
+          <span>Site Mode</span>
+          <select id="siteModeSelect">
+            <option value="inherit-global">Inherit global</option>
+            <option value="strict">Strict</option>
+            <option value="balanced">Balanced</option>
+            <option value="trusted">Trusted</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <section class="cg-card cg-live">
+      <div class="cg-live-item">
+        <span class="cg-dot"></span>
+        <div>
+          <label>Capture</label>
+          <strong id="captureState">Waiting</strong>
+        </div>
+      </div>
+      <div class="cg-live-item">
+        <div>
+          <label>Latest Change</label>
+          <strong id="latestChange">No inspection yet</strong>
+        </div>
+      </div>
+      <div class="cg-live-item">
+        <div>
+          <label>This Session</label>
+          <strong id="sessionSummary">0 events</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="cg-main-grid">
+      <div class="cg-main-left">
+        <section class="cg-card">
+          <div class="cg-section-row">
+            <h2>Cookies <span id="cookieCountLabel">(0)</span></h2>
+            <button id="viewAllCookiesBtn" class="cg-link-btn">View all</button>
+          </div>
+          <div id="cookiesList" class="cg-cookie-list">
+            <div class="cg-empty">No inspection run yet.</div>
+          </div>
+        </section>
+
+        <section class="cg-card">
+          <div class="cg-section-row">
+            <h2>Evidence</h2>
+            <button id="resetSessionBtn" class="cg-link-btn cg-danger-text">Reset session</button>
+          </div>
+
+          <div class="cg-tabs">
+            <button class="cg-tab active" data-tab="session">Current Session</button>
+            <button class="cg-tab" data-tab="site">Site Total</button>
+            <button class="cg-tab" data-tab="important">Important</button>
+          </div>
+
+          <div id="evidenceList" class="cg-evidence-list">
+            <div class="cg-empty">No evidence loaded yet.</div>
+          </div>
+        </section>
+      </div>
+
+      <aside class="cg-side">
+        <section class="cg-card">
+          <h2>Diff Inspector</h2>
+          <div class="cg-diff-row"><span>New</span><strong id="diffNew" class="green">0</strong></div>
+          <div class="cg-diff-row"><span>Removed</span><strong id="diffRemoved" class="red">0</strong></div>
+          <div class="cg-diff-row"><span>Changed</span><strong id="diffChanged" class="orange">0</strong></div>
+        </section>
+
+        <section class="cg-card">
+          <h2>Site Package</h2>
+          <p class="cg-muted">Export current cookies, evidence, mode, and diff data as a local JSON artifact.</p>
+          <button id="exportBtn" class="cg-btn cg-secondary">Export Site Package</button>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <script src="popup.js"></script>
+</body>
+</html>
