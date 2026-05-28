@@ -437,9 +437,32 @@
       var grid = document.createElement("div");
       grid.id = "modeHelpGrid";
       grid.className = "cg-mode-help-grid";
-      grid.innerHTML =
-        '<div class="cg-mode-help"><b>Global:</b> <span id="globalModeHelp"></span></div>' +
-        '<div class="cg-mode-help"><b>Site:</b> <span id="siteModeHelp"></span></div>';
+      var globalHelp = document.createElement("div");
+      globalHelp.className = "cg-mode-help";
+
+      var globalStrong = document.createElement("b");
+      globalStrong.textContent = "Global:";
+      globalHelp.appendChild(globalStrong);
+      globalHelp.appendChild(document.createTextNode(" "));
+
+      var globalSpan = document.createElement("span");
+      globalSpan.id = "globalModeHelp";
+      globalHelp.appendChild(globalSpan);
+
+      var siteHelp = document.createElement("div");
+      siteHelp.className = "cg-mode-help";
+
+      var siteStrong = document.createElement("b");
+      siteStrong.textContent = "Site:";
+      siteHelp.appendChild(siteStrong);
+      siteHelp.appendChild(document.createTextNode(" "));
+
+      var siteSpan = document.createElement("span");
+      siteSpan.id = "siteModeHelp";
+      siteHelp.appendChild(siteSpan);
+
+      grid.appendChild(globalHelp);
+      grid.appendChild(siteHelp);
       modeCard.appendChild(grid);
     }
 
@@ -644,8 +667,9 @@ function cgSelect(id, options){
     var root = byId("evidenceList");
     var list = evidenceForTab();
 
+    root.textContent = "";
+
     if(!list.length){
-      root.textContent = "";
       var emptyEvidence = document.createElement("div");
       emptyEvidence.className = "cg-empty";
       emptyEvidence.textContent = "No evidence for this view yet.";
@@ -653,15 +677,30 @@ function cgSelect(id, options){
       return;
     }
 
-    root.innerHTML = list.map(function(e){
-      return '<div class="cg-event">' +
-        '<div>' +
-          '<div class="cg-event-type">' + safe(e.type) + '</div>' +
-          '<div class="cg-event-summary">' + (e.summary || state.site) + '</div>' +
-        '</div>' +
-        '<div class="cg-event-time">' + new Date(e.ts).toLocaleTimeString() + '</div>' +
-      '</div>';
-    }).join("");
+    list.forEach(function(e){
+      var row = document.createElement("div");
+      row.className = "cg-event";
+
+      var left = document.createElement("div");
+
+      var type = document.createElement("div");
+      type.className = "cg-event-type";
+      type.textContent = safe(e.type);
+      left.appendChild(type);
+
+      var summary = document.createElement("div");
+      summary.className = "cg-event-summary";
+      summary.textContent = safe(e.summary || state.site);
+      left.appendChild(summary);
+
+      var time = document.createElement("div");
+      time.className = "cg-event-time";
+      time.textContent = new Date(e.ts).toLocaleTimeString();
+
+      row.appendChild(left);
+      row.appendChild(time);
+      root.appendChild(row);
+    });
   }
 
   function renderLive(){
