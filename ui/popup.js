@@ -463,6 +463,82 @@
     });
   }
 
+
+// COOKIEGATE_V011_DOM_HELPERS
+function cgEl(tag, className, text){
+  var el = document.createElement(tag);
+
+  if(className){
+    el.className = className;
+  }
+
+  if(text !== undefined && text !== null){
+    el.textContent = String(text);
+  }
+
+  return el;
+}
+
+function cgAppend(parent){
+  for(var i = 1; i < arguments.length; i++){
+    if(arguments[i]){
+      parent.appendChild(arguments[i]);
+    }
+  }
+
+  return parent;
+}
+
+function cgButton(id, className, text){
+  var btn = document.createElement("button");
+  btn.id = id;
+  btn.className = className || "";
+  btn.type = "button";
+  btn.textContent = text || "";
+  return btn;
+}
+
+function cgInput(id, type, className){
+  var input = document.createElement("input");
+  input.id = id;
+  input.type = type || "text";
+
+  if(className){
+    input.className = className;
+  }
+
+  return input;
+}
+
+function cgLabel(className, input, text){
+  var label = document.createElement("label");
+
+  if(className){
+    label.className = className;
+  }
+
+  if(input){
+    label.appendChild(input);
+  }
+
+  label.appendChild(document.createTextNode(text || ""));
+  return label;
+}
+
+function cgSelect(id, options){
+  var select = document.createElement("select");
+  select.id = id;
+
+  for(var i = 0; i < options.length; i++){
+    var opt = document.createElement("option");
+    opt.value = options[i].value;
+    opt.textContent = options[i].text;
+    select.appendChild(opt);
+  }
+
+  return select;
+}
+
   function renderHeader(){
     var statusPill = byId("statusPill");
     if(statusPill){
@@ -896,25 +972,28 @@
     host.id = "cgTransparencyGrid";
     host.className = "cg-transparency-grid";
 
-    host.innerHTML =
-      '<div class="cg-transparency-card" id="cgSavedModeCard">' +
-        '<h3>Saved mode</h3>' +
-        '<div id="cgSavedModeBody"></div>' +
-      '</div>' +
-      '<div class="cg-transparency-card" id="cgWipePlanCard">' +
-        '<h3>Wipe plan</h3>' +
-        '<div id="cgWipePlanBody"></div>' +
-      '</div>' +
-      '<div class="cg-transparency-card" id="cgBrowserObserverCard">' +
-        '<h3>Browser Observer</h3>' +
-        '<div id="cgBrowserObserverBody">' +
-          '<div class="cg-transparency-note">Scan browser-held cookies across domains without needing a domain page active.</div>' +
-        '</div>' +
-        '<div class="cg-observer-actions">' +
-          '<button id="cgObserverScanBtn" type="button">Scan browser</button>' +
-          '<button id="cgObserverExportBtn" type="button">Export observer</button>' +
-        '</div>' +
-      '</div>';
+    var savedModeCard = cgEl("div", "cg-transparency-card");
+    savedModeCard.id = "cgSavedModeCard";
+    savedModeCard.appendChild(cgEl("h3", "", "Saved mode"));
+    var savedModeBody = document.createElement("div");
+    savedModeBody.id = "cgSavedModeBody";
+    savedModeCard.appendChild(savedModeBody);
+
+    var wipePlanCard = cgEl("div", "cg-transparency-card");
+    wipePlanCard.id = "cgWipePlanCard";
+    wipePlanCard.appendChild(cgEl("h3", "", "Wipe plan"));
+    var wipePlanBody = document.createElement("div");
+    wipePlanBody.id = "cgWipePlanBody";
+    wipePlanCard.appendChild(wipePlanBody);
+
+    var browserObserverCard = cgEl("div", "cg-transparency-card");
+    browserObserverCard.id = "cgBrowserObserverCard";
+    browserObserverCard.appendChild(cgEl("h3", "", "Browser Observer"));
+    var browserObserverBody = document.createElement("div");
+    browserObserverBody.id = "cgBrowserObserverBody";
+    browserObserverCard.appendChild(browserObserverBody);
+
+    cgAppend(host, savedModeCard, wipePlanCard, browserObserverCard);
 
     if(live && live.parentNode){
       live.parentNode.insertBefore(host, live.nextSibling);
@@ -1426,10 +1505,12 @@
     const nav = document.createElement("nav");
     nav.id = "cgViewNav";
     nav.className = "cg-view-nav";
-    nav.innerHTML =
-      '<button class="cg-view-tab active" id="cgTabActive" type="button">Active Site</button>' +
-      '<button class="cg-view-tab" id="cgTabObserver" type="button">Browser Observer</button>' +
-      '<button class="cg-view-tab" id="cgTabRules" type="button">Domain Rules</button>';
+    cgAppend(
+      nav,
+      cgButton("cgTabActive", "cg-view-tab active", "Active Site"),
+      cgButton("cgTabObserver", "cg-view-tab", "Browser Observer"),
+      cgButton("cgTabRules", "cg-view-tab", "Domain Rules")
+    );
 
     if(header && header.parentNode){
       header.parentNode.insertBefore(nav, header.nextSibling);
@@ -2662,23 +2743,46 @@
     const card = document.createElement("div");
     card.id = "cgBrowserCleanupCard";
     card.className = "cg-browser-cleanup-card";
-    card.innerHTML =
-      '<h3>Browser Cleanup Plan</h3>' +
-      '<div class="cg-browser-cleanup-grid">' +
-        '<label class="cg-browser-cleanup-check"><input id="cgCleanTracking" type="checkbox" checked>Tracking cookies</label>' +
-        '<label class="cg-browser-cleanup-check"><input id="cgCleanUnknown" type="checkbox" checked>Unknown/review cookies</label>' +
-        '<label class="cg-browser-cleanup-check"><input id="cgCleanPreferences" type="checkbox">Preferences</label>' +
-        '<label class="cg-browser-cleanup-check"><input id="cgPreserveAuth" type="checkbox" checked>Preserve auth/session</label>' +
-        '<label class="cg-browser-cleanup-check"><input id="cgCleanCache" type="checkbox">Cache</label>' +
-        '<label class="cg-browser-cleanup-check"><input id="cgCleanStorage" type="checkbox">Local storage / IndexedDB</label>' +
-        '<label class="cg-browser-cleanup-check"><input id="cgCleanServiceWorkers" type="checkbox">Service workers</label>' +
-      '</div>' +
-      '<div id="cgBrowserCleanupPlan" class="cg-browser-cleanup-plan"></div>' +
-      '<div class="cg-browser-cleanup-actions">' +
-        '<button id="cgPlanBrowserCleanupBtn" type="button">Plan cleanup</button>' +
-        '<button id="cgRunBrowserCleanupBtn" class="danger" type="button">Clean browser</button>' +
-      '</div>' +
-      '<div id="cgBrowserCleanupResult" class="cg-browser-cleanup-note">Choose categories, then plan cleanup.</div>';
+    card.appendChild(cgEl("h3", "", "Browser Cleanup Plan"));
+
+    var cleanupGrid = cgEl("div", "cg-browser-cleanup-grid");
+
+    var cleanTracking = cgInput("cgCleanTracking", "checkbox", "");
+    cleanTracking.checked = true;
+
+    var cleanUnknown = cgInput("cgCleanUnknown", "checkbox", "");
+    cleanUnknown.checked = true;
+
+    var cleanPreferences = cgInput("cgCleanPreferences", "checkbox", "");
+    var preserveAuth = cgInput("cgPreserveAuth", "checkbox", "");
+    preserveAuth.checked = true;
+
+    cgAppend(
+      cleanupGrid,
+      cgLabel("cg-browser-cleanup-check", cleanTracking, "Tracking cookies"),
+      cgLabel("cg-browser-cleanup-check", cleanUnknown, "Unknown/review cookies"),
+      cgLabel("cg-browser-cleanup-check", cleanPreferences, "Preferences"),
+      cgLabel("cg-browser-cleanup-check", preserveAuth, "Preserve auth/session"),
+      cgLabel("cg-browser-cleanup-check", cgInput("cgCleanCache", "checkbox", ""), "Cache"),
+      cgLabel("cg-browser-cleanup-check", cgInput("cgCleanStorage", "checkbox", ""), "Local storage / IndexedDB"),
+      cgLabel("cg-browser-cleanup-check", cgInput("cgCleanServiceWorkers", "checkbox", ""), "Service workers")
+    );
+
+    card.appendChild(cleanupGrid);
+
+    var cleanupPlan = cgEl("div", "cg-browser-cleanup-plan");
+    cleanupPlan.id = "cgBrowserCleanupPlan";
+    card.appendChild(cleanupPlan);
+
+    cgAppend(
+      card,
+      cgButton("cgBrowserCleanupPlanBtn", "cg-browser-cleanup-button", "Plan cleanup"),
+      cgButton("cgBrowserCleanupRunBtn", "cg-browser-cleanup-button danger", "Clean browser")
+    );
+
+    var cleanupResult = cgEl("div", "cg-browser-cleanup-note", "Choose categories, then plan cleanup.");
+    cleanupResult.id = "cgBrowserCleanupResult";
+    card.appendChild(cleanupResult);
 
     observer.appendChild(card);
 
