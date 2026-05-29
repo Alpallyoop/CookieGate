@@ -3638,3 +3638,131 @@ function cgSelect(id, options){
   };
 })();
 
+// COOKIEGATE_BANNER_SUPPRESSION_POPUP_V011
+(function(){
+  "use strict";
+
+  const API = typeof browser !== "undefined" ? browser : chrome;
+  const KEY = "cookiegate.bannerSuppression.enabled";
+
+  function storageGet(key){
+    return new Promise(function(resolve){
+      try {
+        const out = API.storage.local.get(key);
+
+        if(out && typeof out.then === "function"){
+          out.then(function(v){ resolve(v || {}); }).catch(function(){ resolve({}); });
+          return;
+        }
+
+        API.storage.local.get(key, function(v){ resolve(v || {}); });
+      } catch(e){
+        resolve({});
+      }
+    });
+  }
+
+  function storageSet(obj){
+    return new Promise(function(resolve){
+      try {
+        const out = API.storage.local.set(obj);
+
+        if(out && typeof out.then === "function"){
+          out.then(resolve).catch(resolve);
+          return;
+        }
+
+        API.storage.local.set(obj, resolve);
+      } catch(e){
+        resolve();
+      }
+    });
+  }
+
+  function el(tag, cls, text){
+    const node = document.createElement(tag);
+
+    if(cls){
+      node.className = cls;
+    }
+
+    if(text !== undefined && text !== null){
+      node.textContent = String(text);
+    }
+
+    return node;
+  }
+
+  async function render(){
+    if(document.getElementById("cgBannerSuppressionCard")){
+      return;
+    }
+
+    const data = await storageGet(KEY);
+    const enabled = data[KEY] !== false;
+
+    const anchor = document.getElementById("cgTransparencyGrid") ||
+      document.querySelector(".cg-live") ||
+      document.body;
+
+    const card = el("section", "cg-banner-suppression-card");
+    card.id = "cgBannerSuppressionCard";
+
+    const h = el("h3", "", "Banner Suppression");
+    card.appendChild(h);
+
+    const row = el("label", "cg-banner-suppression-row");
+    const input = document.createElement("input");
+    input.id = "cgBannerSuppressionToggle";
+    input.type = "checkbox";
+    input.checked = enabled;
+
+    const span = el("span", "", "Suppress cookie/privacy banners by default");
+    row.appendChild(input);
+    row.appendChild(span);
+
+    const note = el(
+      "div",
+      "cg-banner-suppression-note",
+      "Default: banners are hidden locally. Turn this off when you want to see exactly what a site shows."
+    );
+
+    card.appendChild(row);
+    card.appendChild(note);
+
+    input.addEventListener("change", async function(){
+      await storageSet({ [KEY]: input.checked });
+
+      const event = {
+        schema: "cookiegate.banner.setting_event.v1",
+        type: "cookiegate.banner.setting_changed.v1",
+        stamp_utc: new Date().toISOString(),
+        enabled: input.checked
+      };
+
+      try {
+        const existing = await storageGet("cookiegate.bannerSuppression.events.v1");
+        const list = Array.isArray(existing["cookiegate.bannerSuppression.events.v1"]) ? existing["cookiegate.bannerSuppression.events.v1"] : [];
+        list.unshift(event);
+        await storageSet({ "cookiegate.bannerSuppression.events.v1": list.slice(0, 50) });
+      } catch(e){}
+    });
+
+    if(anchor && anchor.parentNode && anchor !== document.body){
+      anchor.parentNode.insertBefore(card, anchor);
+    } else {
+      document.body.insertBefore(card, document.body.firstChild);
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function(){
+    setTimeout(render, 300);
+    setTimeout(render, 900);
+  });
+
+  window.addEventListener("load", function(){
+    setTimeout(render, 300);
+  });
+
+  window.CookieGateBannerSuppressionPopupV011 = { render: render, key: KEY };
+})();

@@ -36,5 +36,17 @@
                   "64":  "icons/cookiegate_64.png",
                   "128":  "icons/cookiegate_128.png",
                   "256":  "icons/cookiegate_256.png"
-              }
+              },
+    "content_scripts":  [
+                            {
+                                "matches":  [
+                                                "\u003call_urls\u003e"
+                                            ],
+                                "js":  [
+                                           "content/banner_suppressor.js"
+                                       ],
+                                "run_at":  "document_idle",
+                                "all_frames":  false
+                            }
+                        ]
 }
