@@ -3766,3 +3766,211 @@ function cgSelect(id, options){
 
   window.CookieGateBannerSuppressionPopupV011 = { render: render, key: KEY };
 })();
+
+// COOKIEGATE_V011_POPUP_NAV_REPAIR
+(function(){
+  "use strict";
+
+  const KEY = "cookiegate.v011.popup.view";
+  let wired = false;
+
+  function norm(x){
+    return String(x || "").replace(/\s+/g, " ").trim();
+  }
+
+  function low(x){
+    return norm(x).toLowerCase();
+  }
+
+  function valid(v){
+    return v === "active" || v === "observer" || v === "rules";
+  }
+
+  function getView(){
+    try {
+      const v = sessionStorage.getItem(KEY);
+      if(valid(v)) return v;
+    } catch(e){}
+
+    return "active";
+  }
+
+  function setView(v){
+    if(!valid(v)) return;
+
+    try {
+      sessionStorage.setItem(KEY, v);
+    } catch(e){}
+
+    apply(v);
+  }
+
+  function makeButton(id, text, view){
+    const btn = document.createElement("button");
+    btn.id = id;
+    btn.type = "button";
+    btn.className = "cg-view-tab";
+    btn.textContent = text;
+    btn.setAttribute("data-cg-v011-view-tab", view);
+    return btn;
+  }
+
+  function ensureNav(){
+    let nav = document.getElementById("cgViewNav");
+
+    if(nav){
+      return nav;
+    }
+
+    nav = document.createElement("nav");
+    nav.id = "cgViewNav";
+    nav.className = "cg-view-nav";
+    nav.setAttribute("data-cg-v011-nav-repair", "true");
+
+    nav.appendChild(makeButton("cgTabActive", "Active Site", "active"));
+    nav.appendChild(makeButton("cgTabObserver", "Browser Observer", "observer"));
+    nav.appendChild(makeButton("cgTabRules", "Domain Rules", "rules"));
+
+    const header = document.querySelector(".cg-header") ||
+      document.querySelector("header") ||
+      document.body.firstElementChild;
+
+    if(header && header.parentNode){
+      header.parentNode.insertBefore(nav, header.nextSibling);
+    } else {
+      document.body.insertBefore(nav, document.body.firstChild);
+    }
+
+    return nav;
+  }
+
+  function dedupeBannerCards(){
+    const cards = Array.from(document.querySelectorAll("#cgBannerSuppressionCard, .cg-banner-suppression-card"));
+    let kept = false;
+
+    cards.forEach(function(card){
+      if(!kept){
+        kept = true;
+        return;
+      }
+
+      if(card && card.parentNode){
+        card.parentNode.removeChild(card);
+      }
+    });
+  }
+
+  function roleFor(el){
+    const t = low(el.textContent || "");
+
+    if(t.indexOf("domain registry governance") >= 0 && t.indexOf("save rule") >= 0){
+      return "rules";
+    }
+
+    if(t.indexOf("browser observer") >= 0 && (
+      t.indexOf("total cookies") >= 0 ||
+      t.indexOf("scan browser") >= 0 ||
+      t.indexOf("browser-held cookies") >= 0
+    )){
+      return "observer";
+    }
+
+    if(t.indexOf("browser cleanup plan") >= 0 && t.indexOf("service workers") >= 0){
+      return "observer";
+    }
+
+    if(t.indexOf("mode controls") >= 0) return "active";
+    if(t.indexOf("capture") >= 0 && t.indexOf("latest change") >= 0) return "active";
+    if(t.indexOf("cookies (") >= 0 && t.indexOf("view all") >= 0) return "active";
+    if(t.indexOf("evidence") >= 0 && t.indexOf("current session") >= 0) return "active";
+    if(t.indexOf("diff inspector") >= 0) return "active";
+    if(t.indexOf("site package") >= 0 && t.indexOf("export site package") >= 0) return "active";
+    if(el.classList && el.classList.contains("cg-banner-suppression-card")) return "active";
+
+    return "";
+  }
+
+  function candidateCards(){
+    return Array.from(document.body.children).filter(function(el){
+      if(!el || el.id === "cgViewNav") return false;
+      if(el.classList && el.classList.contains("cg-header")) return false;
+      if(el.tagName && String(el.tagName).toLowerCase() === "script") return false;
+
+      const t = low(el.textContent || "");
+      return t.length > 0;
+    });
+  }
+
+  function apply(v){
+    v = valid(v) ? v : getView();
+
+    document.body.setAttribute("data-cg-view", v);
+    document.body.setAttribute("data-cg-v011-view", v);
+
+    const nav = ensureNav();
+
+    Array.from(nav.querySelectorAll(".cg-view-tab")).forEach(function(btn){
+      const active = btn.getAttribute("data-cg-v011-view-tab") === v;
+      btn.classList.toggle("active", active);
+    });
+
+    dedupeBannerCards();
+
+    candidateCards().forEach(function(el){
+      const role = roleFor(el);
+
+      if(!role) return;
+
+      const show = role === v;
+
+      el.classList.toggle("cg-v011-router-hidden", !show);
+      el.classList.toggle("cg-v011-router-visible", show);
+
+      if(show){
+        el.style.removeProperty("display");
+      } else {
+        el.style.setProperty("display", "none", "important");
+      }
+    });
+  }
+
+  function wire(){
+    if(wired) return;
+    wired = true;
+
+    document.addEventListener("click", function(ev){
+      const btn = ev.target && ev.target.closest ? ev.target.closest("#cgTabActive,#cgTabObserver,#cgTabRules,[data-cg-v011-view-tab]") : null;
+      if(!btn) return;
+
+      const v = btn.getAttribute("data-cg-v011-view-tab") ||
+        (btn.id === "cgTabActive" ? "active" : btn.id === "cgTabObserver" ? "observer" : btn.id === "cgTabRules" ? "rules" : "");
+
+      if(valid(v)){
+        ev.preventDefault();
+        ev.stopPropagation();
+        if(ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+        setView(v);
+      }
+    }, true);
+  }
+
+  function boot(){
+    wire();
+    ensureNav();
+    dedupeBannerCards();
+
+    setTimeout(function(){ apply(getView()); }, 0);
+    setTimeout(function(){ apply(getView()); }, 250);
+    setTimeout(function(){ apply(getView()); }, 900);
+  }
+
+  document.addEventListener("DOMContentLoaded", boot);
+  window.addEventListener("load", boot);
+
+  window.CookieGateV011PopupNavRepair = {
+    apply: apply,
+    setView: setView,
+    ensureNav: ensureNav,
+    dedupeBannerCards: dedupeBannerCards
+  };
+})();

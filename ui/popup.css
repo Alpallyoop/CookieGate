@@ -3204,3 +3204,35 @@ body[data-cg-view="rules"] [data-cg-v7-role="site-package"] {
   font-size: 11px;
   line-height: 1.35;
 }
+
+/* COOKIEGATE_V011_POPUP_NAV_REPAIR */
+
+.cg-view-nav {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px;
+  border-top: 1px solid rgba(148, 163, 184, .16);
+  border-bottom: 1px solid rgba(148, 163, 184, .16);
+  background: rgba(2, 6, 23, .18);
+}
+
+.cg-view-tab {
+  min-height: 42px;
+  border: 1px solid rgba(148, 163, 184, .22);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, .82);
+  color: #dbeafe;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.cg-view-tab.active {
+  background: linear-gradient(135deg, rgba(99, 102, 241, .92), rgba(30, 64, 175, .68));
+  border-color: rgba(129, 140, 248, .86);
+  color: #ffffff;
+}
+
+.cg-v011-router-hidden {
+  display: none !important;
+}
