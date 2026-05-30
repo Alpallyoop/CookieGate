@@ -936,6 +936,50 @@ function cgSelect(id, options){
     };
   }
 })();
+
+// COOKIEGATE_V011_DOM_HELPER_TOPLEVEL_ALIASES
+if(typeof window.cgInput !== "function"){
+  window.cgInput = function(id, type, className){
+    var input = document.createElement("input");
+    if(id){ input.id = id; }
+    input.type = type || "text";
+    if(className){ input.className = className; }
+    return input;
+  };
+}
+
+if(typeof window.cgLabel !== "function"){
+  window.cgLabel = function(className, input, text){
+    var label = document.createElement("label");
+    if(className){ label.className = className; }
+    if(input){ label.appendChild(input); }
+    label.appendChild(document.createTextNode(text || ""));
+    return label;
+  };
+}
+
+if(typeof window.cgSelect !== "function"){
+  window.cgSelect = function(id, options){
+    var select = document.createElement("select");
+    if(id){ select.id = id; }
+
+    for(var i = 0; i < options.length; i++){
+      var opt = document.createElement("option");
+      opt.value = options[i].value;
+      opt.textContent = options[i].text;
+      select.appendChild(opt);
+    }
+
+    return select;
+  };
+}
+
+var cgEl = window.cgEl;
+var cgAppend = window.cgAppend;
+var cgButton = window.cgButton;
+var cgInput = window.cgInput;
+var cgLabel = window.cgLabel;
+var cgSelect = window.cgSelect;
 // COOKIEGATE_TRANSPARENCY_OBSERVER_V1
 (function(){
   function cgById(id){
