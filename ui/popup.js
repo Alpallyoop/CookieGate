@@ -437,32 +437,9 @@
       var grid = document.createElement("div");
       grid.id = "modeHelpGrid";
       grid.className = "cg-mode-help-grid";
-      var globalHelp = document.createElement("div");
-      globalHelp.className = "cg-mode-help";
-
-      var globalStrong = document.createElement("b");
-      globalStrong.textContent = "Global:";
-      globalHelp.appendChild(globalStrong);
-      globalHelp.appendChild(document.createTextNode(" "));
-
-      var globalSpan = document.createElement("span");
-      globalSpan.id = "globalModeHelp";
-      globalHelp.appendChild(globalSpan);
-
-      var siteHelp = document.createElement("div");
-      siteHelp.className = "cg-mode-help";
-
-      var siteStrong = document.createElement("b");
-      siteStrong.textContent = "Site:";
-      siteHelp.appendChild(siteStrong);
-      siteHelp.appendChild(document.createTextNode(" "));
-
-      var siteSpan = document.createElement("span");
-      siteSpan.id = "siteModeHelp";
-      siteHelp.appendChild(siteSpan);
-
-      grid.appendChild(globalHelp);
-      grid.appendChild(siteHelp);
+      grid.innerHTML =
+        '<div class="cg-mode-help"><b>Global:</b> <span id="globalModeHelp"></span></div>' +
+        '<div class="cg-mode-help"><b>Site:</b> <span id="siteModeHelp"></span></div>';
       modeCard.appendChild(grid);
     }
 
@@ -486,89 +463,8 @@
     });
   }
 
-
-// COOKIEGATE_V011_DOM_HELPERS
-function cgEl(tag, className, text){
-  var el = document.createElement(tag);
-
-  if(className){
-    el.className = className;
-  }
-
-  if(text !== undefined && text !== null){
-    el.textContent = String(text);
-  }
-
-  return el;
-}
-
-function cgAppend(parent){
-  for(var i = 1; i < arguments.length; i++){
-    if(arguments[i]){
-      parent.appendChild(arguments[i]);
-    }
-  }
-
-  return parent;
-}
-
-function cgButton(id, className, text){
-  var btn = document.createElement("button");
-  btn.id = id;
-  btn.className = className || "";
-  btn.type = "button";
-  btn.textContent = text || "";
-  return btn;
-}
-
-function cgInput(id, type, className){
-  var input = document.createElement("input");
-  input.id = id;
-  input.type = type || "text";
-
-  if(className){
-    input.className = className;
-  }
-
-  return input;
-}
-
-function cgLabel(className, input, text){
-  var label = document.createElement("label");
-
-  if(className){
-    label.className = className;
-  }
-
-  if(input){
-    label.appendChild(input);
-  }
-
-  label.appendChild(document.createTextNode(text || ""));
-  return label;
-}
-
-function cgSelect(id, options){
-  var select = document.createElement("select");
-  select.id = id;
-
-  for(var i = 0; i < options.length; i++){
-    var opt = document.createElement("option");
-    opt.value = options[i].value;
-    opt.textContent = options[i].text;
-    select.appendChild(opt);
-  }
-
-  return select;
-}
-
   function renderHeader(){
-    var statusPill = byId("statusPill");
-    if(statusPill){
-      statusPill.textContent = "";
-      statusPill.appendChild(document.createElement("span"));
-      statusPill.appendChild(document.createTextNode(" READY - " + state.cookies.length + " cookies"));
-    }
+    byId("statusPill").innerHTML = "<span></span> READY - " + state.cookies.length + " cookies";
     byId("siteLine").textContent = "Site: " + safe(state.site);
     byId("urlLine").textContent = state.url || "";
     byId("globalStat").textContent = formatModeLabel(state.globalMode);
@@ -586,11 +482,7 @@ function cgSelect(id, options){
     var root = byId("cookiesList");
 
     if(!state.cookies.length){
-      root.textContent = "";
-      var emptyCookies = document.createElement("div");
-      emptyCookies.className = "cg-empty";
-      emptyCookies.textContent = state.site && state.site !== "-" ? "No cookies found for this site." : "No inspection run yet.";
-      root.appendChild(emptyCookies);
+      root.innerHTML = '<div class="cg-empty">' + (state.site && state.site !== "-" ? "No cookies found for this site." : "No inspection run yet.") + '</div>';
       return;
     }
 
@@ -667,40 +559,20 @@ function cgSelect(id, options){
     var root = byId("evidenceList");
     var list = evidenceForTab();
 
-    root.textContent = "";
-
     if(!list.length){
-      var emptyEvidence = document.createElement("div");
-      emptyEvidence.className = "cg-empty";
-      emptyEvidence.textContent = "No evidence for this view yet.";
-      root.appendChild(emptyEvidence);
+      root.innerHTML = '<div class="cg-empty">No evidence for this view yet.</div>';
       return;
     }
 
-    list.forEach(function(e){
-      var row = document.createElement("div");
-      row.className = "cg-event";
-
-      var left = document.createElement("div");
-
-      var type = document.createElement("div");
-      type.className = "cg-event-type";
-      type.textContent = safe(e.type);
-      left.appendChild(type);
-
-      var summary = document.createElement("div");
-      summary.className = "cg-event-summary";
-      summary.textContent = safe(e.summary || state.site);
-      left.appendChild(summary);
-
-      var time = document.createElement("div");
-      time.className = "cg-event-time";
-      time.textContent = new Date(e.ts).toLocaleTimeString();
-
-      row.appendChild(left);
-      row.appendChild(time);
-      root.appendChild(row);
-    });
+    root.innerHTML = list.map(function(e){
+      return '<div class="cg-event">' +
+        '<div>' +
+          '<div class="cg-event-type">' + safe(e.type) + '</div>' +
+          '<div class="cg-event-summary">' + (e.summary || state.site) + '</div>' +
+        '</div>' +
+        '<div class="cg-event-time">' + new Date(e.ts).toLocaleTimeString() + '</div>' +
+      '</div>';
+    }).join("");
   }
 
   function renderLive(){
@@ -888,98 +760,6 @@ function cgSelect(id, options){
   };
 })();
 
-
-// COOKIEGATE_V011_DOM_HELPER_GLOBAL_BRIDGE
-(function(){
-  "use strict";
-
-  if(typeof window.cgEl !== "function"){
-    window.cgEl = function(tag, className, text){
-      var el = document.createElement(tag);
-
-      if(className){
-        el.className = className;
-      }
-
-      if(text !== undefined && text !== null){
-        el.textContent = String(text);
-      }
-
-      return el;
-    };
-  }
-
-  if(typeof window.cgAppend !== "function"){
-    window.cgAppend = function(parent){
-      for(var i = 1; i < arguments.length; i++){
-        if(arguments[i]){
-          parent.appendChild(arguments[i]);
-        }
-      }
-
-      return parent;
-    };
-  }
-
-  if(typeof window.cgButton !== "function"){
-    window.cgButton = function(id, className, text){
-      var btn = document.createElement("button");
-
-      if(id){
-        btn.id = id;
-      }
-
-      btn.className = className || "";
-      btn.type = "button";
-      btn.textContent = text || "";
-      return btn;
-    };
-  }
-})();
-
-// COOKIEGATE_V011_DOM_HELPER_TOPLEVEL_ALIASES
-if(typeof window.cgInput !== "function"){
-  window.cgInput = function(id, type, className){
-    var input = document.createElement("input");
-    if(id){ input.id = id; }
-    input.type = type || "text";
-    if(className){ input.className = className; }
-    return input;
-  };
-}
-
-if(typeof window.cgLabel !== "function"){
-  window.cgLabel = function(className, input, text){
-    var label = document.createElement("label");
-    if(className){ label.className = className; }
-    if(input){ label.appendChild(input); }
-    label.appendChild(document.createTextNode(text || ""));
-    return label;
-  };
-}
-
-if(typeof window.cgSelect !== "function"){
-  window.cgSelect = function(id, options){
-    var select = document.createElement("select");
-    if(id){ select.id = id; }
-
-    for(var i = 0; i < options.length; i++){
-      var opt = document.createElement("option");
-      opt.value = options[i].value;
-      opt.textContent = options[i].text;
-      select.appendChild(opt);
-    }
-
-    return select;
-  };
-}
-
-var cgEl = window.cgEl;
-var cgAppend = window.cgAppend;
-var cgButton = window.cgButton;
-var cgInput = window.cgInput;
-var cgLabel = window.cgLabel;
-var cgSelect = window.cgSelect;
 // COOKIEGATE_TRANSPARENCY_OBSERVER_V1
 (function(){
   function cgById(id){
@@ -1103,28 +883,25 @@ var cgSelect = window.cgSelect;
     host.id = "cgTransparencyGrid";
     host.className = "cg-transparency-grid";
 
-    var savedModeCard = cgEl("div", "cg-transparency-card");
-    savedModeCard.id = "cgSavedModeCard";
-    savedModeCard.appendChild(cgEl("h3", "", "Saved mode"));
-    var savedModeBody = document.createElement("div");
-    savedModeBody.id = "cgSavedModeBody";
-    savedModeCard.appendChild(savedModeBody);
-
-    var wipePlanCard = cgEl("div", "cg-transparency-card");
-    wipePlanCard.id = "cgWipePlanCard";
-    wipePlanCard.appendChild(cgEl("h3", "", "Wipe plan"));
-    var wipePlanBody = document.createElement("div");
-    wipePlanBody.id = "cgWipePlanBody";
-    wipePlanCard.appendChild(wipePlanBody);
-
-    var browserObserverCard = cgEl("div", "cg-transparency-card");
-    browserObserverCard.id = "cgBrowserObserverCard";
-    browserObserverCard.appendChild(cgEl("h3", "", "Browser Observer"));
-    var browserObserverBody = document.createElement("div");
-    browserObserverBody.id = "cgBrowserObserverBody";
-    browserObserverCard.appendChild(browserObserverBody);
-
-    cgAppend(host, savedModeCard, wipePlanCard, browserObserverCard);
+    host.innerHTML =
+      '<div class="cg-transparency-card" id="cgSavedModeCard">' +
+        '<h3>Saved mode</h3>' +
+        '<div id="cgSavedModeBody"></div>' +
+      '</div>' +
+      '<div class="cg-transparency-card" id="cgWipePlanCard">' +
+        '<h3>Wipe plan</h3>' +
+        '<div id="cgWipePlanBody"></div>' +
+      '</div>' +
+      '<div class="cg-transparency-card" id="cgBrowserObserverCard">' +
+        '<h3>Browser Observer</h3>' +
+        '<div id="cgBrowserObserverBody">' +
+          '<div class="cg-transparency-note">Scan browser-held cookies across domains without needing a domain page active.</div>' +
+        '</div>' +
+        '<div class="cg-observer-actions">' +
+          '<button id="cgObserverScanBtn" type="button">Scan browser</button>' +
+          '<button id="cgObserverExportBtn" type="button">Export observer</button>' +
+        '</div>' +
+      '</div>';
 
     if(live && live.parentNode){
       live.parentNode.insertBefore(host, live.nextSibling);
@@ -1636,12 +1413,10 @@ var cgSelect = window.cgSelect;
     const nav = document.createElement("nav");
     nav.id = "cgViewNav";
     nav.className = "cg-view-nav";
-    cgAppend(
-      nav,
-      cgButton("cgTabActive", "cg-view-tab active", "Active Site"),
-      cgButton("cgTabObserver", "cg-view-tab", "Browser Observer"),
-      cgButton("cgTabRules", "cg-view-tab", "Domain Rules")
-    );
+    nav.innerHTML =
+      '<button class="cg-view-tab active" id="cgTabActive" type="button">Active Site</button>' +
+      '<button class="cg-view-tab" id="cgTabObserver" type="button">Browser Observer</button>' +
+      '<button class="cg-view-tab" id="cgTabRules" type="button">Domain Rules</button>';
 
     if(header && header.parentNode){
       header.parentNode.insertBefore(nav, header.nextSibling);
@@ -2088,11 +1863,7 @@ var cgSelect = window.cgSelect;
     const statusPill = document.getElementById("statusPill");
 
     if(siteLine) siteLine.textContent = "Site: Browser Observer";
-    if(statusPill){
-      statusPill.textContent = "";
-      statusPill.appendChild(document.createElement("span"));
-      statusPill.appendChild(document.createTextNode(" BROWSER OBSERVER"));
-    }
+    if(statusPill) statusPill.innerHTML = "<span></span> BROWSER OBSERVER";
 
     if(window.CookieGateCaptureBrowserObserver && !window.CookieGateBrowserObserverLast){
       window.CookieGateCaptureBrowserObserver(true);
@@ -2874,46 +2645,23 @@ var cgSelect = window.cgSelect;
     const card = document.createElement("div");
     card.id = "cgBrowserCleanupCard";
     card.className = "cg-browser-cleanup-card";
-    card.appendChild(cgEl("h3", "", "Browser Cleanup Plan"));
-
-    var cleanupGrid = cgEl("div", "cg-browser-cleanup-grid");
-
-    var cleanTracking = cgInput("cgCleanTracking", "checkbox", "");
-    cleanTracking.checked = true;
-
-    var cleanUnknown = cgInput("cgCleanUnknown", "checkbox", "");
-    cleanUnknown.checked = true;
-
-    var cleanPreferences = cgInput("cgCleanPreferences", "checkbox", "");
-    var preserveAuth = cgInput("cgPreserveAuth", "checkbox", "");
-    preserveAuth.checked = true;
-
-    cgAppend(
-      cleanupGrid,
-      cgLabel("cg-browser-cleanup-check", cleanTracking, "Tracking cookies"),
-      cgLabel("cg-browser-cleanup-check", cleanUnknown, "Unknown/review cookies"),
-      cgLabel("cg-browser-cleanup-check", cleanPreferences, "Preferences"),
-      cgLabel("cg-browser-cleanup-check", preserveAuth, "Preserve auth/session"),
-      cgLabel("cg-browser-cleanup-check", cgInput("cgCleanCache", "checkbox", ""), "Cache"),
-      cgLabel("cg-browser-cleanup-check", cgInput("cgCleanStorage", "checkbox", ""), "Local storage / IndexedDB"),
-      cgLabel("cg-browser-cleanup-check", cgInput("cgCleanServiceWorkers", "checkbox", ""), "Service workers")
-    );
-
-    card.appendChild(cleanupGrid);
-
-    var cleanupPlan = cgEl("div", "cg-browser-cleanup-plan");
-    cleanupPlan.id = "cgBrowserCleanupPlan";
-    card.appendChild(cleanupPlan);
-
-    cgAppend(
-      card,
-      cgButton("cgBrowserCleanupPlanBtn", "cg-browser-cleanup-button", "Plan cleanup"),
-      cgButton("cgBrowserCleanupRunBtn", "cg-browser-cleanup-button danger", "Clean browser")
-    );
-
-    var cleanupResult = cgEl("div", "cg-browser-cleanup-note", "Choose categories, then plan cleanup.");
-    cleanupResult.id = "cgBrowserCleanupResult";
-    card.appendChild(cleanupResult);
+    card.innerHTML =
+      '<h3>Browser Cleanup Plan</h3>' +
+      '<div class="cg-browser-cleanup-grid">' +
+        '<label class="cg-browser-cleanup-check"><input id="cgCleanTracking" type="checkbox" checked>Tracking cookies</label>' +
+        '<label class="cg-browser-cleanup-check"><input id="cgCleanUnknown" type="checkbox" checked>Unknown/review cookies</label>' +
+        '<label class="cg-browser-cleanup-check"><input id="cgCleanPreferences" type="checkbox">Preferences</label>' +
+        '<label class="cg-browser-cleanup-check"><input id="cgPreserveAuth" type="checkbox" checked>Preserve auth/session</label>' +
+        '<label class="cg-browser-cleanup-check"><input id="cgCleanCache" type="checkbox">Cache</label>' +
+        '<label class="cg-browser-cleanup-check"><input id="cgCleanStorage" type="checkbox">Local storage / IndexedDB</label>' +
+        '<label class="cg-browser-cleanup-check"><input id="cgCleanServiceWorkers" type="checkbox">Service workers</label>' +
+      '</div>' +
+      '<div id="cgBrowserCleanupPlan" class="cg-browser-cleanup-plan"></div>' +
+      '<div class="cg-browser-cleanup-actions">' +
+        '<button id="cgPlanBrowserCleanupBtn" type="button">Plan cleanup</button>' +
+        '<button id="cgRunBrowserCleanupBtn" class="danger" type="button">Clean browser</button>' +
+      '</div>' +
+      '<div id="cgBrowserCleanupResult" class="cg-browser-cleanup-note">Choose categories, then plan cleanup.</div>';
 
     observer.appendChild(card);
 
@@ -3681,12 +3429,7 @@ var cgSelect = window.cgSelect;
       el = document.createElement("div");
       el.id = "cgActiveUnavailableToast";
       el.className = "cg-toast";
-      el.textContent = "";
-      var activeUnavailableStrong = document.createElement("b");
-      activeUnavailableStrong.textContent = "Active Site unavailable.";
-      el.appendChild(activeUnavailableStrong);
-      el.appendChild(document.createElement("br"));
-      el.appendChild(document.createTextNode("Open a website tab to inspect site cookies."));
+      el.innerHTML = "<b>Active Site unavailable.</b><br>Open a website tab to inspect site cookies.";
       document.body.appendChild(el);
     }
 
@@ -3730,339 +3473,3 @@ var cgSelect = window.cgSelect;
   };
 })();
 
-// COOKIEGATE_BANNER_SUPPRESSION_POPUP_V011
-(function(){
-  "use strict";
-
-  const API = typeof browser !== "undefined" ? browser : chrome;
-  const KEY = "cookiegate.bannerSuppression.enabled";
-
-  function storageGet(key){
-    return new Promise(function(resolve){
-      try {
-        const out = API.storage.local.get(key);
-
-        if(out && typeof out.then === "function"){
-          out.then(function(v){ resolve(v || {}); }).catch(function(){ resolve({}); });
-          return;
-        }
-
-        API.storage.local.get(key, function(v){ resolve(v || {}); });
-      } catch(e){
-        resolve({});
-      }
-    });
-  }
-
-  function storageSet(obj){
-    return new Promise(function(resolve){
-      try {
-        const out = API.storage.local.set(obj);
-
-        if(out && typeof out.then === "function"){
-          out.then(resolve).catch(resolve);
-          return;
-        }
-
-        API.storage.local.set(obj, resolve);
-      } catch(e){
-        resolve();
-      }
-    });
-  }
-
-  function el(tag, cls, text){
-    const node = document.createElement(tag);
-
-    if(cls){
-      node.className = cls;
-    }
-
-    if(text !== undefined && text !== null){
-      node.textContent = String(text);
-    }
-
-    return node;
-  }
-
-  async function render(){
-    if(document.getElementById("cgBannerSuppressionCard")){
-      return;
-    }
-
-    const data = await storageGet(KEY);
-    const enabled = data[KEY] !== false;
-
-    const anchor = document.getElementById("cgTransparencyGrid") ||
-      document.querySelector(".cg-live") ||
-      document.body;
-
-    const card = el("section", "cg-banner-suppression-card");
-    card.id = "cgBannerSuppressionCard";
-
-    const h = el("h3", "", "Banner Suppression");
-    card.appendChild(h);
-
-    const row = el("label", "cg-banner-suppression-row");
-    const input = document.createElement("input");
-    input.id = "cgBannerSuppressionToggle";
-    input.type = "checkbox";
-    input.checked = enabled;
-
-    const span = el("span", "", "Suppress cookie/privacy banners by default");
-    row.appendChild(input);
-    row.appendChild(span);
-
-    const note = el(
-      "div",
-      "cg-banner-suppression-note",
-      "Default: banners are hidden locally. Turn this off when you want to see exactly what a site shows."
-    );
-
-    card.appendChild(row);
-    card.appendChild(note);
-
-    input.addEventListener("change", async function(){
-      await storageSet({ [KEY]: input.checked });
-
-      const event = {
-        schema: "cookiegate.banner.setting_event.v1",
-        type: "cookiegate.banner.setting_changed.v1",
-        stamp_utc: new Date().toISOString(),
-        enabled: input.checked
-      };
-
-      try {
-        const existing = await storageGet("cookiegate.bannerSuppression.events.v1");
-        const list = Array.isArray(existing["cookiegate.bannerSuppression.events.v1"]) ? existing["cookiegate.bannerSuppression.events.v1"] : [];
-        list.unshift(event);
-        await storageSet({ "cookiegate.bannerSuppression.events.v1": list.slice(0, 50) });
-      } catch(e){}
-    });
-
-    if(anchor && anchor.parentNode && anchor !== document.body){
-      anchor.parentNode.insertBefore(card, anchor);
-    } else {
-      document.body.insertBefore(card, document.body.firstChild);
-    }
-  }
-
-  document.addEventListener("DOMContentLoaded", function(){
-    setTimeout(render, 300);
-    setTimeout(render, 900);
-  });
-
-  window.addEventListener("load", function(){
-    setTimeout(render, 300);
-  });
-
-  window.CookieGateBannerSuppressionPopupV011 = { render: render, key: KEY };
-})();
-
-// COOKIEGATE_V011_POPUP_NAV_REPAIR
-(function(){
-  "use strict";
-
-  const KEY = "cookiegate.v011.popup.view";
-  let wired = false;
-
-  function norm(x){
-    return String(x || "").replace(/\s+/g, " ").trim();
-  }
-
-  function low(x){
-    return norm(x).toLowerCase();
-  }
-
-  function valid(v){
-    return v === "active" || v === "observer" || v === "rules";
-  }
-
-  function getView(){
-    try {
-      const v = sessionStorage.getItem(KEY);
-      if(valid(v)) return v;
-    } catch(e){}
-
-    return "active";
-  }
-
-  function setView(v){
-    if(!valid(v)) return;
-
-    try {
-      sessionStorage.setItem(KEY, v);
-    } catch(e){}
-
-    apply(v);
-  }
-
-  function makeButton(id, text, view){
-    const btn = document.createElement("button");
-    btn.id = id;
-    btn.type = "button";
-    btn.className = "cg-view-tab";
-    btn.textContent = text;
-    btn.setAttribute("data-cg-v011-view-tab", view);
-    return btn;
-  }
-
-  function ensureNav(){
-    let nav = document.getElementById("cgViewNav");
-
-    if(nav){
-      return nav;
-    }
-
-    nav = document.createElement("nav");
-    nav.id = "cgViewNav";
-    nav.className = "cg-view-nav";
-    nav.setAttribute("data-cg-v011-nav-repair", "true");
-
-    nav.appendChild(makeButton("cgTabActive", "Active Site", "active"));
-    nav.appendChild(makeButton("cgTabObserver", "Browser Observer", "observer"));
-    nav.appendChild(makeButton("cgTabRules", "Domain Rules", "rules"));
-
-    const header = document.querySelector(".cg-header") ||
-      document.querySelector("header") ||
-      document.body.firstElementChild;
-
-    if(header && header.parentNode){
-      header.parentNode.insertBefore(nav, header.nextSibling);
-    } else {
-      document.body.insertBefore(nav, document.body.firstChild);
-    }
-
-    return nav;
-  }
-
-  function dedupeBannerCards(){
-    const cards = Array.from(document.querySelectorAll("#cgBannerSuppressionCard, .cg-banner-suppression-card"));
-    let kept = false;
-
-    cards.forEach(function(card){
-      if(!kept){
-        kept = true;
-        return;
-      }
-
-      if(card && card.parentNode){
-        card.parentNode.removeChild(card);
-      }
-    });
-  }
-
-  function roleFor(el){
-    const t = low(el.textContent || "");
-
-    if(t.indexOf("domain registry governance") >= 0 && t.indexOf("save rule") >= 0){
-      return "rules";
-    }
-
-    if(t.indexOf("browser observer") >= 0 && (
-      t.indexOf("total cookies") >= 0 ||
-      t.indexOf("scan browser") >= 0 ||
-      t.indexOf("browser-held cookies") >= 0
-    )){
-      return "observer";
-    }
-
-    if(t.indexOf("browser cleanup plan") >= 0 && t.indexOf("service workers") >= 0){
-      return "observer";
-    }
-
-    if(t.indexOf("mode controls") >= 0) return "active";
-    if(t.indexOf("capture") >= 0 && t.indexOf("latest change") >= 0) return "active";
-    if(t.indexOf("cookies (") >= 0 && t.indexOf("view all") >= 0) return "active";
-    if(t.indexOf("evidence") >= 0 && t.indexOf("current session") >= 0) return "active";
-    if(t.indexOf("diff inspector") >= 0) return "active";
-    if(t.indexOf("site package") >= 0 && t.indexOf("export site package") >= 0) return "active";
-    if(el.classList && el.classList.contains("cg-banner-suppression-card")) return "active";
-
-    return "";
-  }
-
-  function candidateCards(){
-    return Array.from(document.body.children).filter(function(el){
-      if(!el || el.id === "cgViewNav") return false;
-      if(el.classList && el.classList.contains("cg-header")) return false;
-      if(el.tagName && String(el.tagName).toLowerCase() === "script") return false;
-
-      const t = low(el.textContent || "");
-      return t.length > 0;
-    });
-  }
-
-  function apply(v){
-    v = valid(v) ? v : getView();
-
-    document.body.setAttribute("data-cg-view", v);
-    document.body.setAttribute("data-cg-v011-view", v);
-
-    const nav = ensureNav();
-
-    Array.from(nav.querySelectorAll(".cg-view-tab")).forEach(function(btn){
-      const active = btn.getAttribute("data-cg-v011-view-tab") === v;
-      btn.classList.toggle("active", active);
-    });
-
-    dedupeBannerCards();
-
-    candidateCards().forEach(function(el){
-      const role = roleFor(el);
-
-      if(!role) return;
-
-      const show = role === v;
-
-      el.classList.toggle("cg-v011-router-hidden", !show);
-      el.classList.toggle("cg-v011-router-visible", show);
-
-      if(show){
-        el.style.removeProperty("display");
-      } else {
-        el.style.setProperty("display", "none", "important");
-      }
-    });
-  }
-
-  function wire(){
-    if(wired) return;
-    wired = true;
-
-    document.addEventListener("click", function(ev){
-      const btn = ev.target && ev.target.closest ? ev.target.closest("#cgTabActive,#cgTabObserver,#cgTabRules,[data-cg-v011-view-tab]") : null;
-      if(!btn) return;
-
-      const v = btn.getAttribute("data-cg-v011-view-tab") ||
-        (btn.id === "cgTabActive" ? "active" : btn.id === "cgTabObserver" ? "observer" : btn.id === "cgTabRules" ? "rules" : "");
-
-      if(valid(v)){
-        ev.preventDefault();
-        ev.stopPropagation();
-        if(ev.stopImmediatePropagation) ev.stopImmediatePropagation();
-        setView(v);
-      }
-    }, true);
-  }
-
-  function boot(){
-    wire();
-    ensureNav();
-    dedupeBannerCards();
-
-    setTimeout(function(){ apply(getView()); }, 0);
-    setTimeout(function(){ apply(getView()); }, 250);
-    setTimeout(function(){ apply(getView()); }, 900);
-  }
-
-  document.addEventListener("DOMContentLoaded", boot);
-  window.addEventListener("load", boot);
-
-  window.CookieGateV011PopupNavRepair = {
-    apply: apply,
-    setView: setView,
-    ensureNav: ensureNav,
-    dedupeBannerCards: dedupeBannerCards
-  };
-})();
