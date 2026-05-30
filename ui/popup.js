@@ -888,6 +888,54 @@ function cgSelect(id, options){
   };
 })();
 
+
+// COOKIEGATE_V011_DOM_HELPER_GLOBAL_BRIDGE
+(function(){
+  "use strict";
+
+  if(typeof window.cgEl !== "function"){
+    window.cgEl = function(tag, className, text){
+      var el = document.createElement(tag);
+
+      if(className){
+        el.className = className;
+      }
+
+      if(text !== undefined && text !== null){
+        el.textContent = String(text);
+      }
+
+      return el;
+    };
+  }
+
+  if(typeof window.cgAppend !== "function"){
+    window.cgAppend = function(parent){
+      for(var i = 1; i < arguments.length; i++){
+        if(arguments[i]){
+          parent.appendChild(arguments[i]);
+        }
+      }
+
+      return parent;
+    };
+  }
+
+  if(typeof window.cgButton !== "function"){
+    window.cgButton = function(id, className, text){
+      var btn = document.createElement("button");
+
+      if(id){
+        btn.id = id;
+      }
+
+      btn.className = className || "";
+      btn.type = "button";
+      btn.textContent = text || "";
+      return btn;
+    };
+  }
+})();
 // COOKIEGATE_TRANSPARENCY_OBSERVER_V1
 (function(){
   function cgById(id){
