@@ -2665,13 +2665,22 @@
 
     observer.appendChild(card);
 
-    byIdV4("cgPlanBrowserCleanupBtn").addEventListener("click", function(){
-      planBrowserCleanupV4(true);
-    });
+    // COOKIEGATE_V011_CLEANUP_BUTTON_GUARD
+    const planBtnV4 = byIdV4("cgPlanBrowserCleanupBtn");
+    if(planBtnV4 && planBtnV4.getAttribute("data-cg-cleanup-bound") !== "1"){
+      planBtnV4.setAttribute("data-cg-cleanup-bound", "1");
+      planBtnV4.addEventListener("click", function(){
+        planBrowserCleanupV4(true);
+      });
+    }
 
-    byIdV4("cgRunBrowserCleanupBtn").addEventListener("click", function(){
-      runBrowserCleanupV4();
-    });
+    const runBtnV4 = byIdV4("cgRunBrowserCleanupBtn");
+    if(runBtnV4 && runBtnV4.getAttribute("data-cg-cleanup-bound") !== "1"){
+      runBtnV4.setAttribute("data-cg-cleanup-bound", "1");
+      runBtnV4.addEventListener("click", function(){
+        runBrowserCleanupV4();
+      });
+    }
 
     ["cgCleanTracking","cgCleanUnknown","cgCleanPreferences","cgPreserveAuth","cgCleanCache","cgCleanStorage","cgCleanServiceWorkers"].forEach(function(id){
       const el = byIdV4(id);
