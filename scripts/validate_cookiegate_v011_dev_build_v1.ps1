@@ -114,7 +114,8 @@ $BannerJs = Get-Content -LiteralPath (Join-Path $Build 'content\banner_suppresso
 
 foreach($marker in @(
   'COOKIEGATE_ROUTER_V7_STATIC_TABS_CLEAN',
-  'COOKIEGATE_V011_OPTIONS_COG_LAUNCHER'
+  'COOKIEGATE_V011_OPTIONS_COG_LAUNCHER',
+  'COOKIEGATE_V011_BROWSER_OBSERVER_FINAL_CHART_WATCHDOG'
 )){
   if($PopupJs -notmatch [regex]::Escape($marker)){
     Die 'V011_VALIDATE_FAIL:POPUP_MARKER_MISSING' $marker
