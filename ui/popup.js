@@ -3482,3 +3482,58 @@
   };
 })();
 
+// COOKIEGATE_V011_OPTIONS_POPUP_LAUNCHER
+(function(){
+  "use strict";
+
+  const API = typeof browser !== "undefined" ? browser : chrome;
+
+  function openOptions(){
+    try {
+      if(API.runtime && API.runtime.openOptionsPage){
+        API.runtime.openOptionsPage();
+        return;
+      }
+    } catch(e){}
+
+    try {
+      window.open(API.runtime.getURL("options/options.html"));
+    } catch(e){}
+  }
+
+  function install(){
+    if(document.getElementById("cgOptionsLauncherBtn")) return;
+
+    const btn = document.createElement("button");
+    btn.id = "cgOptionsLauncherBtn";
+    btn.type = "button";
+    btn.className = "cg-options-launcher";
+    btn.textContent = "Options";
+    btn.addEventListener("click", function(ev){
+      ev.preventDefault();
+      ev.stopPropagation();
+      openOptions();
+    }, true);
+
+    const target =
+      document.querySelector(".cg-actions") ||
+      document.querySelector(".cg-header") ||
+      document.body.firstElementChild ||
+      document.body;
+
+    if(target && target.appendChild){
+      target.appendChild(btn);
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function(){
+    setTimeout(install, 120);
+    setTimeout(install, 600);
+  });
+
+  window.addEventListener("load", function(){
+    setTimeout(install, 180);
+  });
+
+  window.CookieGateOptionsPopupLauncherV011 = { install: install, openOptions: openOptions };
+})();

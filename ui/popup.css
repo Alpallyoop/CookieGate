@@ -3167,3 +3167,21 @@ body[data-cg-view="rules"] [data-cg-v7-role="site-package"] {
   border-radius: 999px !important;
   background: linear-gradient(90deg, #6d6aff, #9ec5ff) !important;
 }
+
+/* COOKIEGATE_V011_OPTIONS_POPUP_LAUNCHER */
+.cg-options-launcher {
+  margin-left: 8px;
+  border: 1px solid rgba(148, 163, 184, .25);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, .86);
+  color: #dbeafe;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 7px 10px;
+  cursor: pointer;
+}
+
+.cg-options-launcher:hover {
+  border-color: rgba(147, 197, 253, .65);
+  background: rgba(30, 64, 175, .5);
+}
