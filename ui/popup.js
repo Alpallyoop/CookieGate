@@ -3581,3 +3581,174 @@
     openOptions: openOptions
   };
 })();
+
+// COOKIEGATE_V011_BANNER_EVIDENCE_POPUP
+(function(){
+  "use strict";
+
+  const API = typeof browser !== "undefined" ? browser : chrome;
+  const EVENTS_KEY = "cookiegate.bannerSuppression.events.v1";
+
+  function storageGet(key){
+    return new Promise(function(resolve){
+      try {
+        if(!API || !API.storage || !API.storage.local){
+          resolve({});
+          return;
+        }
+
+        const out = API.storage.local.get(key);
+
+        if(out && typeof out.then === "function"){
+          out.then(function(v){ resolve(v || {}); }).catch(function(){ resolve({}); });
+          return;
+        }
+
+        API.storage.local.get(key, function(v){ resolve(v || {}); });
+      } catch(e){
+        resolve({});
+      }
+    });
+  }
+
+  function cleanHost(x){
+    x = String(x || "").trim().toLowerCase();
+    x = x.replace(/^site:\s*/i, "");
+    x = x.replace(/^https?:\/\//, "");
+    x = x.split("/")[0].split("?")[0].split("#")[0];
+    x = x.replace(/:\d+$/, "");
+    x = x.replace(/^www\./, "");
+
+    if(x === "-" || x === "newtab" || x === "browser" || x === "browser observer"){
+      return "";
+    }
+
+    return x;
+  }
+
+  function visibleHost(){
+    const body = String(document.body && document.body.textContent ? document.body.textContent : "");
+    const m = body.match(/Site:\s*([^\n\r]+)/i);
+
+    if(m && m[1]){
+      return cleanHost(m[1]);
+    }
+
+    return "";
+  }
+
+  function findEvidenceHost(){
+    const all = Array.prototype.slice.call(document.querySelectorAll("body *"));
+
+    for(let i = 0; i < all.length; i++){
+      const t = String(all[i].textContent || "").replace(/\s+/g, " ").trim().toLowerCase();
+
+      if(t.indexOf("evidence") >= 0 && t.indexOf("current session") >= 0 && t.indexOf("site total") >= 0){
+        return all[i];
+      }
+    }
+
+    return null;
+  }
+
+  function makeMetric(label, value){
+    const row = document.createElement("div");
+    row.className = "cg-banner-evidence-row";
+
+    const l = document.createElement("span");
+    l.textContent = label;
+
+    const v = document.createElement("b");
+    v.textContent = String(value);
+
+    row.appendChild(l);
+    row.appendChild(v);
+
+    return row;
+  }
+
+  function eventHost(e){
+    return cleanHost(e && e.host ? e.host : "");
+  }
+
+  function formatTime(x){
+    if(!x) return "none";
+
+    try {
+      return new Date(x).toLocaleTimeString();
+    } catch(e){
+      return String(x);
+    }
+  }
+
+  async function render(){
+    const host = findEvidenceHost();
+    if(!host) return;
+
+    let card = document.getElementById("cgBannerEvidenceV011");
+
+    if(!card){
+      card = document.createElement("div");
+      card.id = "cgBannerEvidenceV011";
+      card.className = "cg-banner-evidence-card";
+      host.appendChild(card);
+    }
+
+    const data = await storageGet(EVENTS_KEY);
+    const events = Array.isArray(data[EVENTS_KEY]) ? data[EVENTS_KEY] : [];
+    const current = visibleHost();
+
+    const matching = current ? events.filter(function(e){
+      const h = eventHost(e);
+      return h === current || h.endsWith("." + current);
+    }) : events;
+
+    const suppressed = matching.filter(function(e){
+      return String(e.type || "").indexOf("banner.suppressed") >= 0;
+    });
+
+    const detected = matching.filter(function(e){
+      return String(e.type || "").indexOf("banner.detected") >= 0;
+    });
+
+    const last = matching.length ? matching[0] : null;
+
+    card.textContent = "";
+
+    const title = document.createElement("div");
+    title.className = "cg-banner-evidence-title";
+    title.textContent = "Banner Evidence";
+    card.appendChild(title);
+
+    card.appendChild(makeMetric("Suppressed", suppressed.length));
+    card.appendChild(makeMetric("Detected", detected.length));
+
+    const lastRow = document.createElement("div");
+    lastRow.className = "cg-banner-evidence-last";
+
+    const lastHost = last && last.host ? last.host : "none";
+    const lastTime = last && last.stamp_utc ? formatTime(last.stamp_utc) : "none";
+
+    lastRow.textContent = "Last: " + lastHost + " / " + lastTime;
+    card.appendChild(lastRow);
+
+    const note = document.createElement("div");
+    note.className = "cg-banner-evidence-note";
+    note.textContent = "Local banner events only. No page content or raw cookie values exported.";
+    card.appendChild(note);
+  }
+
+  function boot(){
+    setTimeout(render, 300);
+    setTimeout(render, 900);
+    setTimeout(render, 1800);
+  }
+
+  document.addEventListener("DOMContentLoaded", boot);
+  window.addEventListener("load", boot);
+
+  window.CookieGateBannerEvidencePopupV011 = {
+    render: render,
+    visibleHost: visibleHost
+  };
+})();
