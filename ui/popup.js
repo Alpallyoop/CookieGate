@@ -3594,3 +3594,103 @@
     openOptions: openOptions
   };
 })();
+
+// COOKIEGATE_V011_OPTIONS_COG_LAUNCHER
+(function(){
+  "use strict";
+
+  const API = typeof browser !== "undefined" ? browser : chrome;
+
+  function openOptions(){
+    try {
+      if(API.runtime && API.runtime.openOptionsPage){
+        API.runtime.openOptionsPage();
+        return;
+      }
+    } catch(e){}
+
+    try {
+      window.open(API.runtime.getURL("options/options.html"));
+    } catch(e){}
+  }
+
+  function removeOldLaunchers(){
+    Array.prototype.forEach.call(document.querySelectorAll(
+      "#cgOptionsFloatingBtn, #cgOptionsLauncherBtn, .cg-options-floating-btn, .cg-options-launcher:not(.cg-options-gear-btn)"
+    ), function(el){
+      if(el && el.parentNode){
+        el.parentNode.removeChild(el);
+      }
+    });
+  }
+
+  function findTitle(){
+    const heads = Array.prototype.slice.call(document.querySelectorAll("h1,h2,.cg-title,.cg-brand,[class*='title'],[class*='brand']"));
+
+    for(let i = 0; i < heads.length; i++){
+      const t = String(heads[i].textContent || "").replace(/\s+/g, " ").trim().toLowerCase();
+      if(t === "cookiegate"){
+        return heads[i];
+      }
+    }
+
+    const all = Array.prototype.slice.call(document.querySelectorAll("body *"));
+    for(let j = 0; j < all.length; j++){
+      const txt = String(all[j].textContent || "").replace(/\s+/g, " ").trim();
+      if(txt === "CookieGate"){
+        return all[j];
+      }
+    }
+
+    return null;
+  }
+
+  function install(){
+    removeOldLaunchers();
+
+    if(document.getElementById("cgOptionsCogBtn")){
+      return;
+    }
+
+    const title = findTitle();
+
+    const btn = document.createElement("button");
+    btn.id = "cgOptionsCogBtn";
+    btn.type = "button";
+    btn.className = "cg-options-gear-btn";
+    btn.title = "CookieGate options";
+    btn.setAttribute("aria-label", "Open CookieGate options");
+    btn.textContent = "⚙";
+
+    btn.addEventListener("click", function(ev){
+      ev.preventDefault();
+      ev.stopPropagation();
+      if(ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+      openOptions();
+    }, true);
+
+    if(title && title.parentNode){
+      title.parentNode.insertBefore(btn, title.nextSibling);
+      title.parentNode.classList.add("cg-title-with-options");
+    } else {
+      document.body.insertBefore(btn, document.body.firstChild);
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function(){
+    setTimeout(install, 80);
+    setTimeout(install, 350);
+    setTimeout(install, 1000);
+    setTimeout(install, 1800);
+  });
+
+  window.addEventListener("load", function(){
+    setTimeout(install, 120);
+    setTimeout(install, 700);
+  });
+
+  window.CookieGateOptionsCogLauncherV011 = {
+    install: install,
+    openOptions: openOptions
+  };
+})();

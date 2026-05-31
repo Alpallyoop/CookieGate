@@ -3208,3 +3208,45 @@ body[data-cg-view="rules"] [data-cg-v7-role="site-package"] {
   background: rgba(30, 64, 175, .92) !important;
   color: #ffffff !important;
 }
+
+/* COOKIEGATE_V011_OPTIONS_COG_LAUNCHER */
+
+#cgOptionsFloatingBtn,
+#cgOptionsLauncherBtn,
+.cg-options-floating-btn,
+.cg-options-launcher:not(.cg-options-gear-btn) {
+  display: none !important;
+}
+
+.cg-title-with-options {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.cg-options-gear-btn {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  border: 1px solid rgba(148, 163, 184, .28) !important;
+  border-radius: 999px !important;
+  background: rgba(15, 23, 42, .72) !important;
+  color: #dbeafe !important;
+  font-size: 14px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  margin: 0 0 0 2px !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+}
+
+.cg-options-gear-btn:hover {
+  border-color: rgba(147, 197, 253, .75) !important;
+  background: rgba(30, 64, 175, .76) !important;
+  color: #ffffff !important;
+}
