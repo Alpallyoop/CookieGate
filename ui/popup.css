@@ -3185,3 +3185,26 @@ body[data-cg-view="rules"] [data-cg-v7-role="site-package"] {
   border-color: rgba(147, 197, 253, .65);
   background: rgba(30, 64, 175, .5);
 }
+
+/* COOKIEGATE_V011_OPTIONS_FLOATING_LAUNCHER */
+.cg-options-floating-btn {
+  position: fixed !important;
+  top: 10px !important;
+  right: 10px !important;
+  z-index: 2147483647 !important;
+  border: 1px solid rgba(147, 197, 253, .72) !important;
+  border-radius: 999px !important;
+  background: rgba(15, 23, 42, .96) !important;
+  color: #dbeafe !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  padding: 8px 10px !important;
+  cursor: pointer !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .28) !important;
+}
+
+.cg-options-floating-btn:hover {
+  background: rgba(30, 64, 175, .92) !important;
+  color: #ffffff !important;
+}

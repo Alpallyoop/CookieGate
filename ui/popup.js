@@ -3537,3 +3537,60 @@
 
   window.CookieGateOptionsPopupLauncherV011 = { install: install, openOptions: openOptions };
 })();
+
+// COOKIEGATE_V011_OPTIONS_FLOATING_LAUNCHER
+(function(){
+  "use strict";
+
+  const API = typeof browser !== "undefined" ? browser : chrome;
+
+  function openOptions(){
+    try {
+      if(API.runtime && API.runtime.openOptionsPage){
+        API.runtime.openOptionsPage();
+        return;
+      }
+    } catch(e){}
+
+    try {
+      window.open(API.runtime.getURL("options/options.html"));
+    } catch(e){}
+  }
+
+  function install(){
+    const old = document.getElementById("cgOptionsFloatingBtn");
+    if(old) return;
+
+    const btn = document.createElement("button");
+    btn.id = "cgOptionsFloatingBtn";
+    btn.type = "button";
+    btn.textContent = "Options";
+    btn.title = "Open CookieGate options";
+    btn.className = "cg-options-floating-btn";
+
+    btn.addEventListener("click", function(ev){
+      ev.preventDefault();
+      ev.stopPropagation();
+      if(ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+      openOptions();
+    }, true);
+
+    document.body.appendChild(btn);
+  }
+
+  document.addEventListener("DOMContentLoaded", function(){
+    setTimeout(install, 50);
+    setTimeout(install, 250);
+    setTimeout(install, 900);
+  });
+
+  window.addEventListener("load", function(){
+    setTimeout(install, 100);
+    setTimeout(install, 600);
+  });
+
+  window.CookieGateOptionsFloatingLauncherV011 = {
+    install: install,
+    openOptions: openOptions
+  };
+})();
