@@ -112,11 +112,13 @@ $PopupCss = Get-Content -LiteralPath (Join-Path $Build 'ui\popup.css') -Raw
 $OptionsJs = Get-Content -LiteralPath (Join-Path $Build 'options\options.js') -Raw
 $BannerJs = Get-Content -LiteralPath (Join-Path $Build 'content\banner_suppressor.js') -Raw
 
-foreach($marker in @(
-  'COOKIEGATE_ROUTER_V7_STATIC_TABS_CLEAN',
-  'COOKIEGATE_V011_OPTIONS_COG_LAUNCHER',
-  'COOKIEGATE_V011_DOMAIN_REMOTE_TOOLS',
-)){
+$RequiredPopupMarkers = @(
+  'COOKIEGATE_ROUTER_V7_STATIC_TABS_CLEAN'
+  'COOKIEGATE_V011_OPTIONS_COG_LAUNCHER'
+  'COOKIEGATE_V011_DOMAIN_REMOTE_TOOLS'
+)
+
+foreach($marker in $RequiredPopupMarkers){
   if($PopupJs -notmatch [regex]::Escape($marker)){
     Die 'V011_VALIDATE_FAIL:POPUP_MARKER_MISSING' $marker
   }
