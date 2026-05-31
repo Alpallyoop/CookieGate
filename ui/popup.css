@@ -3298,7 +3298,7 @@ body[data-cg-view="rules"] [data-cg-v7-role="site-package"] {
   line-height: 1.35;
 }
 
-/* COOKIEGATE_V011_BROWSER_OBSERVER_FINAL_CHART_WATCHDOG */
+
 
 [data-cg-v011-legacy-chart-hidden="true"] {
   display: none !important;
@@ -3462,6 +3462,120 @@ body[data-cg-view="rules"] [data-cg-v7-role="site-package"] {
 
 .cg-watchdog-chart-note {
   margin-top: 9px;
+  color: #8ea0bf;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+/* COOKIEGATE_V011_DOMAIN_REMOTE_TOOLS */
+
+.cg-domain-tools-card {
+  margin: 0 0 14px;
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, .18);
+  border-radius: 18px;
+  background: rgba(2, 6, 23, .36);
+}
+
+.cg-domain-tools-title {
+  color: #e5eefc;
+  font-size: 13px;
+  font-weight: 950;
+  letter-spacing: .02em;
+}
+
+.cg-domain-tools-subtitle {
+  margin-top: 3px;
+  color: #8ea0bf;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.cg-domain-tools-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  margin-top: 10px;
+  align-items: center;
+}
+
+.cg-domain-tools-row input[type="text"] {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(148, 163, 184, .28);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, .82);
+  color: #e5eefc;
+  padding: 9px 10px;
+  font-weight: 800;
+}
+
+.cg-domain-tools-btn {
+  border: 1px solid rgba(148, 163, 184, .24);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, .82);
+  color: #dbeafe;
+  padding: 9px 10px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.cg-domain-tools-btn.primary {
+  background: rgba(79, 70, 229, .9);
+  color: #ffffff;
+}
+
+.cg-domain-tools-btn.danger {
+  background: rgba(220, 38, 38, .9);
+  color: #ffffff;
+}
+
+.cg-domain-tools-check {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+  color: #a9b8d2;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.cg-domain-tools-status {
+  margin-top: 10px;
+  color: #93c5fd;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.cg-domain-tools-list {
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.cg-domain-tools-cookie {
+  padding: 8px;
+  border: 1px solid rgba(148, 163, 184, .12);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, .52);
+}
+
+.cg-domain-tools-cookie-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: #e5eefc;
+  font-size: 11px;
+}
+
+.cg-domain-tools-cookie-top span {
+  color: #93c5fd;
+  font-weight: 900;
+}
+
+.cg-domain-tools-cookie-meta,
+.cg-domain-tools-empty {
+  margin-top: 4px;
   color: #8ea0bf;
   font-size: 10px;
   line-height: 1.35;

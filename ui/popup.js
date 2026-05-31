@@ -3753,322 +3753,375 @@
   };
 })();
 
-// COOKIEGATE_V011_BROWSER_OBSERVER_FINAL_CHART_WATCHDOG
+// COOKIEGATE_V011_DOMAIN_REMOTE_TOOLS
 (function(){
   "use strict";
 
-  let observer = null;
-  let renderTimer = null;
+  const API = typeof browser !== "undefined" ? browser : chrome;
 
-  function text(x){
+  function norm(x){
     return String(x || "").replace(/\s+/g, " ").trim();
   }
 
   function low(x){
-    return text(x).toLowerCase();
+    return norm(x).toLowerCase();
   }
 
-  function numberAfter(label, haystack){
-    const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const re = new RegExp(escaped + "\\s+(\\d+)", "i");
-    const m = text(haystack).match(re);
-
-    if(m && m[1]){
-      const n = parseInt(m[1], 10);
-      return Number.isFinite(n) ? n : 0;
-    }
-
-    return 0;
-  }
-
-  function pct(value, total){
-    if(!total) return 0;
-    return Math.round((value / total) * 100);
-  }
-
-  function svgEl(tag){
-    return document.createElementNS("http://www.w3.org/2000/svg", tag);
-  }
-
-  function el(tag, cls, value){
+  function el(tag, cls, text){
     const node = document.createElement(tag);
 
     if(cls){
       node.className = cls;
     }
 
-    if(value !== undefined && value !== null){
-      node.textContent = String(value);
+    if(text !== undefined && text !== null){
+      node.textContent = String(text);
     }
 
     return node;
   }
 
-  function visible(el){
-    if(!el || !el.getBoundingClientRect) return false;
-
-    const r = el.getBoundingClientRect();
-    return r.width > 20 && r.height > 20;
+  function button(id, text, cls){
+    const b = document.createElement("button");
+    b.id = id;
+    b.type = "button";
+    b.className = cls || "cg-domain-tools-btn";
+    b.textContent = text;
+    return b;
   }
 
-  function findObserverPanel(){
+  function normalizeAddress(input){
+    let x = norm(input).toLowerCase();
+
+    if(!x){
+      return "";
+    }
+
+    x = x.replace(/^site:\s*/i, "");
+
+    try {
+      if(!/^https?:\/\//i.test(x)){
+        x = "https://" + x;
+      }
+
+      const u = new URL(x);
+      return String(u.hostname || "").replace(/^www\./, "");
+    } catch(e){
+      x = x.replace(/^https?:\/\//i, "");
+      x = x.split("/")[0].split("?")[0].split("#")[0];
+      x = x.replace(/:\d+$/, "");
+      x = x.replace(/^www\./, "");
+      return x;
+    }
+  }
+
+  function currentSite(){
+    const body = String(document.body && document.body.textContent ? document.body.textContent : "");
+    const m = body.match(/Site:\s*([^\n\r]+)/i);
+
+    if(m && m[1]){
+      return normalizeAddress(m[1]);
+    }
+
+    return "";
+  }
+
+  function rootDomain(host){
+    host = normalizeAddress(host);
+    const parts = host.split(".").filter(Boolean);
+
+    if(parts.length <= 2){
+      return host;
+    }
+
+    const last = parts[parts.length - 1];
+    const second = parts[parts.length - 2];
+
+    if(last.length === 2 && second.length <= 3 && parts.length >= 3){
+      return parts.slice(-3).join(".");
+    }
+
+    return parts.slice(-2).join(".");
+  }
+
+  function getCookiesForDomain(domain){
+    return new Promise(function(resolve){
+      if(!API || !API.cookies || !API.cookies.getAll){
+        resolve([]);
+        return;
+      }
+
+      try {
+        API.cookies.getAll({ domain: domain }, function(cookies){
+          resolve(Array.isArray(cookies) ? cookies : []);
+        });
+      } catch(e){
+        resolve([]);
+      }
+    });
+  }
+
+  function removeCookie(cookie){
+    return new Promise(function(resolve){
+      if(!API || !API.cookies || !API.cookies.remove){
+        resolve(false);
+        return;
+      }
+
+      try {
+        const host = String(cookie.domain || "").replace(/^\./, "");
+        const path = cookie.path || "/";
+        const protocol = cookie.secure ? "https://" : "http://";
+        const url = protocol + host + path;
+
+        API.cookies.remove({
+          url: url,
+          name: cookie.name,
+          storeId: cookie.storeId
+        }, function(result){
+          resolve(!!result);
+        });
+      } catch(e){
+        resolve(false);
+      }
+    });
+  }
+
+  function classify(cookie){
+    const name = low(cookie && cookie.name ? cookie.name : "");
+
+    if(name.indexOf("session") >= 0 ||
+      name.indexOf("auth") >= 0 ||
+      name.indexOf("token") >= 0 ||
+      name.indexOf("csrf") >= 0 ||
+      name.indexOf("login") >= 0 ||
+      name.indexOf("sid") >= 0){
+      return "auth/session";
+    }
+
+    if(name.indexOf("pref") >= 0 ||
+      name.indexOf("setting") >= 0 ||
+      name.indexOf("locale") >= 0 ||
+      name.indexOf("lang") >= 0){
+      return "preferences";
+    }
+
+    if(name.indexOf("_ga") >= 0 ||
+      name.indexOf("_gid") >= 0 ||
+      name.indexOf("fbp") >= 0 ||
+      name.indexOf("gcl") >= 0 ||
+      name.indexOf("track") >= 0 ||
+      name.indexOf("mixpanel") >= 0){
+      return "tracking";
+    }
+
+    return "unknown/review";
+  }
+
+  function shouldPreserve(cookie, includeAuth){
+    if(includeAuth){
+      return false;
+    }
+
+    return classify(cookie) === "auth/session";
+  }
+
+  function findDomainRulesPanel(){
     const candidates = Array.prototype.slice.call(document.querySelectorAll("section, article, main, div"));
 
     const hits = candidates.filter(function(node){
-      if(!visible(node)) return false;
-
       const t = low(node.textContent);
-      return t.indexOf("browser observer") >= 0 &&
-        t.indexOf("total cookies") >= 0 &&
-        t.indexOf("domains") >= 0 &&
-        t.indexOf("review/tracking") >= 0 &&
-        t.indexOf("privacy: raw cookie values are not exported") >= 0;
+
+      return t.indexOf("domain registry governance") >= 0 &&
+        t.indexOf("save rule") >= 0 &&
+        t.indexOf("export rules") >= 0;
     });
 
     hits.sort(function(a,b){
-      return text(a.textContent).length - text(b.textContent).length;
+      return norm(a.textContent).length - norm(b.textContent).length;
     });
 
     return hits[0] || null;
   }
 
-  function readStats(panel){
-    const raw = text(panel ? panel.textContent : "");
+  function renderCookieRows(root, cookies){
+    root.textContent = "";
 
-    const total = numberAfter("Total cookies", raw);
-    const review = numberAfter("Review/tracking", raw);
-    const auth = numberAfter("Auth/session", raw);
-    const prefs = numberAfter("Preferences", raw);
-    const tracking = numberAfter("Tracking", raw);
-    const unknown = numberAfter("Unknown", raw);
-
-    return {
-      total: total || review + auth + prefs,
-      review: review,
-      auth: auth,
-      prefs: prefs,
-      tracking: tracking,
-      unknown: unknown
-    };
-  }
-
-  function hideLegacyChart(panel){
-    if(!panel) return;
-
-    const nodes = Array.prototype.slice.call(panel.querySelectorAll("*"));
-
-    nodes.forEach(function(node){
-      if(node.id === "cgFinalObserverChartWatchdogV011") return;
-      if(node.closest && node.closest("#cgFinalObserverChartWatchdogV011")) return;
-
-      const cls = low(node.className);
-      const t = low(node.textContent);
-      const rect = node.getBoundingClientRect ? node.getBoundingClientRect() : null;
-
-      const chartClass =
-        cls.indexOf("donut") >= 0 ||
-        cls.indexOf("pie") >= 0 ||
-        cls.indexOf("chart") >= 0 ||
-        cls.indexOf("observer-visual") >= 0 ||
-        cls.indexOf("browser-observer-visual") >= 0;
-
-      const compactLegend =
-        t.indexOf("auth/session") >= 0 &&
-        t.indexOf("preferences") >= 0 &&
-        t.indexOf("tracking") >= 0 &&
-        t.indexOf("unknown") >= 0 &&
-        t.length < 180;
-
-      const donutShape =
-        rect &&
-        rect.width >= 60 &&
-        rect.width <= 180 &&
-        rect.height >= 60 &&
-        rect.height <= 180 &&
-        t.indexOf("%") >= 0;
-
-      if(chartClass || compactLegend || donutShape){
-        node.setAttribute("data-cg-v011-legacy-chart-hidden", "true");
-      }
-    });
-  }
-
-  function segment(value, total, offset, cls){
-    const r = 42;
-    const c = 2 * Math.PI * r;
-    const len = total > 0 ? (value / total) * c : 0;
-    const gap = value > 0 ? 1.25 : 0;
-
-    const circle = svgEl("circle");
-    circle.setAttribute("class", "cg-watchdog-chart-segment " + cls);
-    circle.setAttribute("cx", "50");
-    circle.setAttribute("cy", "50");
-    circle.setAttribute("r", String(r));
-    circle.setAttribute("fill", "none");
-    circle.setAttribute("pathLength", String(c));
-    circle.setAttribute("stroke-dasharray", Math.max(0, len - gap) + " " + c);
-    circle.setAttribute("stroke-dashoffset", String(-offset));
-
-    return {
-      node: circle,
-      next: offset + len
-    };
-  }
-
-  function row(label, value, total, cls){
-    const r = el("div", "cg-watchdog-chart-row");
-
-    const left = el("div", "cg-watchdog-chart-left");
-    left.appendChild(el("span", "cg-watchdog-chart-dot " + cls));
-    left.appendChild(el("span", "", label));
-
-    const right = el("div", "cg-watchdog-chart-right");
-    right.appendChild(el("b", "", value));
-    right.appendChild(el("span", "", pct(value, total) + "%"));
-
-    r.appendChild(left);
-    r.appendChild(right);
-
-    return r;
-  }
-
-  function insertBeforePrivacy(panel, card){
-    const nodes = Array.prototype.slice.call(panel.querySelectorAll("*"));
-    const privacy = nodes.find(function(node){
-      return low(node.textContent).indexOf("privacy: raw cookie values are not exported") >= 0;
-    });
-
-    if(privacy && privacy.parentNode){
-      privacy.parentNode.insertBefore(card, privacy);
+    if(!cookies.length){
+      root.appendChild(el("div", "cg-domain-tools-empty", "No cookies found for this domain."));
       return;
     }
 
-    panel.appendChild(card);
-  }
+    cookies.slice(0, 40).forEach(function(c){
+      const row = el("div", "cg-domain-tools-cookie");
 
-  function render(){
-    const panel = findObserverPanel();
-    if(!panel) return false;
+      const top = el("div", "cg-domain-tools-cookie-top");
+      top.appendChild(el("b", "", c.name || "(unnamed)"));
+      top.appendChild(el("span", "", classify(c)));
 
-    hideLegacyChart(panel);
+      const meta = el("div", "cg-domain-tools-cookie-meta");
+      meta.textContent = String(c.domain || "") + " | " + String(c.path || "/") + " | Secure: " + (c.secure ? "Yes" : "No");
 
-    const stats = readStats(panel);
-    const total = stats.total || 1;
-
-    let card = document.getElementById("cgFinalObserverChartWatchdogV011");
-
-    if(!card){
-      card = el("section", "cg-watchdog-chart-card");
-      card.id = "cgFinalObserverChartWatchdogV011";
-      insertBeforePrivacy(panel, card);
-    }
-
-    card.textContent = "";
-
-    card.appendChild(el("div", "cg-watchdog-chart-title", "Cookie Distribution"));
-    card.appendChild(el("div", "cg-watchdog-chart-subtitle", "Exact Browser Observer breakdown"));
-
-    const wrap = el("div", "cg-watchdog-chart-wrap");
-    const visual = el("div", "cg-watchdog-chart-visual");
-
-    const svg = svgEl("svg");
-    svg.setAttribute("viewBox", "0 0 100 100");
-    svg.setAttribute("class", "cg-watchdog-chart-svg");
-    svg.setAttribute("role", "img");
-    svg.setAttribute("aria-label", "Cookie distribution chart");
-
-    const track = svgEl("circle");
-    track.setAttribute("class", "cg-watchdog-chart-track");
-    track.setAttribute("cx", "50");
-    track.setAttribute("cy", "50");
-    track.setAttribute("r", "42");
-    track.setAttribute("fill", "none");
-    svg.appendChild(track);
-
-    let offset = 0;
-
-    [
-      { value: stats.review, cls: "review" },
-      { value: stats.auth, cls: "auth" },
-      { value: stats.prefs, cls: "prefs" },
-      { value: stats.unknown, cls: "unknown" }
-    ].forEach(function(item){
-      if(item.value <= 0) return;
-
-      const s = segment(item.value, total, offset, item.cls);
-      offset = s.next;
-      svg.appendChild(s.node);
+      row.appendChild(top);
+      row.appendChild(meta);
+      root.appendChild(row);
     });
 
-    const center = el("div", "cg-watchdog-chart-center");
-    center.appendChild(el("b", "", pct(stats.review, total) + "%"));
-    center.appendChild(el("span", "", "review"));
-
-    visual.appendChild(svg);
-    visual.appendChild(center);
-
-    const legend = el("div", "cg-watchdog-chart-legend");
-    legend.appendChild(row("Review / tracking", stats.review, total, "review"));
-    legend.appendChild(row("Auth / session", stats.auth, total, "auth"));
-    legend.appendChild(row("Preferences", stats.prefs, total, "prefs"));
-    legend.appendChild(row("Unknown", stats.unknown, total, "unknown"));
-
-    wrap.appendChild(visual);
-    wrap.appendChild(legend);
-
-    card.appendChild(wrap);
-    card.appendChild(el("div", "cg-watchdog-chart-note", "Owned SVG chart. No gradient leakage. No raw cookie values exported."));
-
-    return true;
+    if(cookies.length > 40){
+      root.appendChild(el("div", "cg-domain-tools-empty", "Showing first 40 of " + cookies.length + " cookies."));
+    }
   }
 
-  function schedule(){
-    if(renderTimer){
-      clearTimeout(renderTimer);
+  async function inspect(){
+    const input = document.getElementById("cgDomainToolsAddress");
+    const status = document.getElementById("cgDomainToolsStatus");
+    const list = document.getElementById("cgDomainToolsList");
+
+    if(!input || !status || !list) return;
+
+    const host = normalizeAddress(input.value);
+    const root = rootDomain(host);
+
+    if(!root){
+      status.textContent = "Enter a domain or URL first.";
+      return;
     }
 
-    renderTimer = setTimeout(function(){
-      try { render(); } catch(e) {}
-    }, 80);
+    input.value = root;
+    status.textContent = "Inspecting " + root + "...";
+
+    const cookies = await getCookiesForDomain(root);
+    const preserve = cookies.filter(function(c){ return shouldPreserve(c, false); }).length;
+    const removable = cookies.length - preserve;
+
+    status.textContent = "Found " + cookies.length + " cookies for " + root + ". Removable by default: " + removable + ". Preserved auth/session: " + preserve + ".";
+    renderCookieRows(list, cookies);
+  }
+
+  async function wipe(){
+    const input = document.getElementById("cgDomainToolsAddress");
+    const includeAuth = document.getElementById("cgDomainToolsIncludeAuth");
+    const status = document.getElementById("cgDomainToolsStatus");
+    const list = document.getElementById("cgDomainToolsList");
+
+    if(!input || !status || !list) return;
+
+    const host = normalizeAddress(input.value);
+    const root = rootDomain(host);
+
+    if(!root){
+      status.textContent = "Enter a domain or URL first.";
+      return;
+    }
+
+    input.value = root;
+
+    const cookies = await getCookiesForDomain(root);
+    const remove = cookies.filter(function(c){
+      return !shouldPreserve(c, !!(includeAuth && includeAuth.checked));
+    });
+
+    status.textContent = "Removing " + remove.length + " cookies for " + root + "...";
+
+    let removed = 0;
+
+    for(let i = 0; i < remove.length; i++){
+      if(await removeCookie(remove[i])){
+        removed++;
+      }
+    }
+
+    const after = await getCookiesForDomain(root);
+    status.textContent = "Removed " + removed + " cookies for " + root + ". Remaining: " + after.length + ".";
+    renderCookieRows(list, after);
+  }
+
+  function install(){
+    const panel = findDomainRulesPanel();
+
+    if(!panel){
+      return;
+    }
+
+    if(document.getElementById("cgDomainRemoteToolsV011")){
+      return;
+    }
+
+    const card = el("section", "cg-domain-tools-card");
+    card.id = "cgDomainRemoteToolsV011";
+
+    card.appendChild(el("div", "cg-domain-tools-title", "Domain Tools"));
+    card.appendChild(el("div", "cg-domain-tools-subtitle", "Inspect or wipe cookies for a typed domain or URL path without leaving the current tab."));
+
+    const row = el("div", "cg-domain-tools-row");
+
+    const input = document.createElement("input");
+    input.id = "cgDomainToolsAddress";
+    input.type = "text";
+    input.placeholder = "amazon.com or https://amazon.com/path/example";
+    input.value = currentSite();
+
+    row.appendChild(input);
+    row.appendChild(button("cgDomainToolsInspect", "Inspect domain", "cg-domain-tools-btn primary"));
+    row.appendChild(button("cgDomainToolsWipe", "Wipe domain", "cg-domain-tools-btn danger"));
+
+    const include = document.createElement("label");
+    include.className = "cg-domain-tools-check";
+
+    const cb = document.createElement("input");
+    cb.id = "cgDomainToolsIncludeAuth";
+    cb.type = "checkbox";
+
+    include.appendChild(cb);
+    include.appendChild(document.createTextNode(" Include auth/session cookies"));
+
+    const status = el("div", "cg-domain-tools-status", "Type a domain or full URL, then inspect cookies.");
+    status.id = "cgDomainToolsStatus";
+
+    const list = el("div", "cg-domain-tools-list");
+    list.id = "cgDomainToolsList";
+
+    card.appendChild(row);
+    card.appendChild(include);
+    card.appendChild(status);
+    card.appendChild(list);
+
+    panel.insertBefore(card, panel.firstChild);
+
+    document.getElementById("cgDomainToolsInspect").addEventListener("click", function(ev){
+      ev.preventDefault();
+      inspect();
+    });
+
+    document.getElementById("cgDomainToolsWipe").addEventListener("click", function(ev){
+      ev.preventDefault();
+      wipe();
+    });
   }
 
   function boot(){
-    schedule();
-    setTimeout(schedule, 250);
-    setTimeout(schedule, 700);
-    setTimeout(schedule, 1400);
-    setTimeout(schedule, 2500);
+    setTimeout(install, 200);
+    setTimeout(install, 700);
+    setTimeout(install, 1500);
 
     document.addEventListener("click", function(ev){
       const t = low(ev.target && ev.target.textContent ? ev.target.textContent : "");
 
-      if(t.indexOf("browser observer") >= 0 || t.indexOf("scan browser") >= 0){
-        setTimeout(schedule, 80);
-        setTimeout(schedule, 400);
-        setTimeout(schedule, 1000);
+      if(t.indexOf("domain rules") >= 0){
+        setTimeout(install, 150);
+        setTimeout(install, 600);
       }
     }, true);
-
-    if(!observer){
-      observer = new MutationObserver(function(){
-        schedule();
-      });
-
-      try {
-        observer.observe(document.body, {
-          childList: true,
-          subtree: true,
-          characterData: true
-        });
-      } catch(e){}
-    }
   }
 
   document.addEventListener("DOMContentLoaded", boot);
   window.addEventListener("load", boot);
 
-  window.CookieGateFinalObserverChartWatchdogV011 = {
-    render: render,
-    readStats: readStats
+  window.CookieGateDomainRemoteToolsV011 = {
+    install: install,
+    normalizeAddress: normalizeAddress,
+    rootDomain: rootDomain,
+    inspect: inspect,
+    wipe: wipe
   };
 })();
