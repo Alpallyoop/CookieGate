@@ -3752,3 +3752,323 @@
     visibleHost: visibleHost
   };
 })();
+
+// COOKIEGATE_V011_BROWSER_OBSERVER_FINAL_CHART_WATCHDOG
+(function(){
+  "use strict";
+
+  let observer = null;
+  let renderTimer = null;
+
+  function text(x){
+    return String(x || "").replace(/\s+/g, " ").trim();
+  }
+
+  function low(x){
+    return text(x).toLowerCase();
+  }
+
+  function numberAfter(label, haystack){
+    const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const re = new RegExp(escaped + "\\s+(\\d+)", "i");
+    const m = text(haystack).match(re);
+
+    if(m && m[1]){
+      const n = parseInt(m[1], 10);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    return 0;
+  }
+
+  function pct(value, total){
+    if(!total) return 0;
+    return Math.round((value / total) * 100);
+  }
+
+  function svgEl(tag){
+    return document.createElementNS("http://www.w3.org/2000/svg", tag);
+  }
+
+  function el(tag, cls, value){
+    const node = document.createElement(tag);
+
+    if(cls){
+      node.className = cls;
+    }
+
+    if(value !== undefined && value !== null){
+      node.textContent = String(value);
+    }
+
+    return node;
+  }
+
+  function visible(el){
+    if(!el || !el.getBoundingClientRect) return false;
+
+    const r = el.getBoundingClientRect();
+    return r.width > 20 && r.height > 20;
+  }
+
+  function findObserverPanel(){
+    const candidates = Array.prototype.slice.call(document.querySelectorAll("section, article, main, div"));
+
+    const hits = candidates.filter(function(node){
+      if(!visible(node)) return false;
+
+      const t = low(node.textContent);
+      return t.indexOf("browser observer") >= 0 &&
+        t.indexOf("total cookies") >= 0 &&
+        t.indexOf("domains") >= 0 &&
+        t.indexOf("review/tracking") >= 0 &&
+        t.indexOf("privacy: raw cookie values are not exported") >= 0;
+    });
+
+    hits.sort(function(a,b){
+      return text(a.textContent).length - text(b.textContent).length;
+    });
+
+    return hits[0] || null;
+  }
+
+  function readStats(panel){
+    const raw = text(panel ? panel.textContent : "");
+
+    const total = numberAfter("Total cookies", raw);
+    const review = numberAfter("Review/tracking", raw);
+    const auth = numberAfter("Auth/session", raw);
+    const prefs = numberAfter("Preferences", raw);
+    const tracking = numberAfter("Tracking", raw);
+    const unknown = numberAfter("Unknown", raw);
+
+    return {
+      total: total || review + auth + prefs,
+      review: review,
+      auth: auth,
+      prefs: prefs,
+      tracking: tracking,
+      unknown: unknown
+    };
+  }
+
+  function hideLegacyChart(panel){
+    if(!panel) return;
+
+    const nodes = Array.prototype.slice.call(panel.querySelectorAll("*"));
+
+    nodes.forEach(function(node){
+      if(node.id === "cgFinalObserverChartWatchdogV011") return;
+      if(node.closest && node.closest("#cgFinalObserverChartWatchdogV011")) return;
+
+      const cls = low(node.className);
+      const t = low(node.textContent);
+      const rect = node.getBoundingClientRect ? node.getBoundingClientRect() : null;
+
+      const chartClass =
+        cls.indexOf("donut") >= 0 ||
+        cls.indexOf("pie") >= 0 ||
+        cls.indexOf("chart") >= 0 ||
+        cls.indexOf("observer-visual") >= 0 ||
+        cls.indexOf("browser-observer-visual") >= 0;
+
+      const compactLegend =
+        t.indexOf("auth/session") >= 0 &&
+        t.indexOf("preferences") >= 0 &&
+        t.indexOf("tracking") >= 0 &&
+        t.indexOf("unknown") >= 0 &&
+        t.length < 180;
+
+      const donutShape =
+        rect &&
+        rect.width >= 60 &&
+        rect.width <= 180 &&
+        rect.height >= 60 &&
+        rect.height <= 180 &&
+        t.indexOf("%") >= 0;
+
+      if(chartClass || compactLegend || donutShape){
+        node.setAttribute("data-cg-v011-legacy-chart-hidden", "true");
+      }
+    });
+  }
+
+  function segment(value, total, offset, cls){
+    const r = 42;
+    const c = 2 * Math.PI * r;
+    const len = total > 0 ? (value / total) * c : 0;
+    const gap = value > 0 ? 1.25 : 0;
+
+    const circle = svgEl("circle");
+    circle.setAttribute("class", "cg-watchdog-chart-segment " + cls);
+    circle.setAttribute("cx", "50");
+    circle.setAttribute("cy", "50");
+    circle.setAttribute("r", String(r));
+    circle.setAttribute("fill", "none");
+    circle.setAttribute("pathLength", String(c));
+    circle.setAttribute("stroke-dasharray", Math.max(0, len - gap) + " " + c);
+    circle.setAttribute("stroke-dashoffset", String(-offset));
+
+    return {
+      node: circle,
+      next: offset + len
+    };
+  }
+
+  function row(label, value, total, cls){
+    const r = el("div", "cg-watchdog-chart-row");
+
+    const left = el("div", "cg-watchdog-chart-left");
+    left.appendChild(el("span", "cg-watchdog-chart-dot " + cls));
+    left.appendChild(el("span", "", label));
+
+    const right = el("div", "cg-watchdog-chart-right");
+    right.appendChild(el("b", "", value));
+    right.appendChild(el("span", "", pct(value, total) + "%"));
+
+    r.appendChild(left);
+    r.appendChild(right);
+
+    return r;
+  }
+
+  function insertBeforePrivacy(panel, card){
+    const nodes = Array.prototype.slice.call(panel.querySelectorAll("*"));
+    const privacy = nodes.find(function(node){
+      return low(node.textContent).indexOf("privacy: raw cookie values are not exported") >= 0;
+    });
+
+    if(privacy && privacy.parentNode){
+      privacy.parentNode.insertBefore(card, privacy);
+      return;
+    }
+
+    panel.appendChild(card);
+  }
+
+  function render(){
+    const panel = findObserverPanel();
+    if(!panel) return false;
+
+    hideLegacyChart(panel);
+
+    const stats = readStats(panel);
+    const total = stats.total || 1;
+
+    let card = document.getElementById("cgFinalObserverChartWatchdogV011");
+
+    if(!card){
+      card = el("section", "cg-watchdog-chart-card");
+      card.id = "cgFinalObserverChartWatchdogV011";
+      insertBeforePrivacy(panel, card);
+    }
+
+    card.textContent = "";
+
+    card.appendChild(el("div", "cg-watchdog-chart-title", "Cookie Distribution"));
+    card.appendChild(el("div", "cg-watchdog-chart-subtitle", "Exact Browser Observer breakdown"));
+
+    const wrap = el("div", "cg-watchdog-chart-wrap");
+    const visual = el("div", "cg-watchdog-chart-visual");
+
+    const svg = svgEl("svg");
+    svg.setAttribute("viewBox", "0 0 100 100");
+    svg.setAttribute("class", "cg-watchdog-chart-svg");
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", "Cookie distribution chart");
+
+    const track = svgEl("circle");
+    track.setAttribute("class", "cg-watchdog-chart-track");
+    track.setAttribute("cx", "50");
+    track.setAttribute("cy", "50");
+    track.setAttribute("r", "42");
+    track.setAttribute("fill", "none");
+    svg.appendChild(track);
+
+    let offset = 0;
+
+    [
+      { value: stats.review, cls: "review" },
+      { value: stats.auth, cls: "auth" },
+      { value: stats.prefs, cls: "prefs" },
+      { value: stats.unknown, cls: "unknown" }
+    ].forEach(function(item){
+      if(item.value <= 0) return;
+
+      const s = segment(item.value, total, offset, item.cls);
+      offset = s.next;
+      svg.appendChild(s.node);
+    });
+
+    const center = el("div", "cg-watchdog-chart-center");
+    center.appendChild(el("b", "", pct(stats.review, total) + "%"));
+    center.appendChild(el("span", "", "review"));
+
+    visual.appendChild(svg);
+    visual.appendChild(center);
+
+    const legend = el("div", "cg-watchdog-chart-legend");
+    legend.appendChild(row("Review / tracking", stats.review, total, "review"));
+    legend.appendChild(row("Auth / session", stats.auth, total, "auth"));
+    legend.appendChild(row("Preferences", stats.prefs, total, "prefs"));
+    legend.appendChild(row("Unknown", stats.unknown, total, "unknown"));
+
+    wrap.appendChild(visual);
+    wrap.appendChild(legend);
+
+    card.appendChild(wrap);
+    card.appendChild(el("div", "cg-watchdog-chart-note", "Owned SVG chart. No gradient leakage. No raw cookie values exported."));
+
+    return true;
+  }
+
+  function schedule(){
+    if(renderTimer){
+      clearTimeout(renderTimer);
+    }
+
+    renderTimer = setTimeout(function(){
+      try { render(); } catch(e) {}
+    }, 80);
+  }
+
+  function boot(){
+    schedule();
+    setTimeout(schedule, 250);
+    setTimeout(schedule, 700);
+    setTimeout(schedule, 1400);
+    setTimeout(schedule, 2500);
+
+    document.addEventListener("click", function(ev){
+      const t = low(ev.target && ev.target.textContent ? ev.target.textContent : "");
+
+      if(t.indexOf("browser observer") >= 0 || t.indexOf("scan browser") >= 0){
+        setTimeout(schedule, 80);
+        setTimeout(schedule, 400);
+        setTimeout(schedule, 1000);
+      }
+    }, true);
+
+    if(!observer){
+      observer = new MutationObserver(function(){
+        schedule();
+      });
+
+      try {
+        observer.observe(document.body, {
+          childList: true,
+          subtree: true,
+          characterData: true
+        });
+      } catch(e){}
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", boot);
+  window.addEventListener("load", boot);
+
+  window.CookieGateFinalObserverChartWatchdogV011 = {
+    render: render,
+    readStats: readStats
+  };
+})();
