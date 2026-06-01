@@ -4125,3 +4125,325 @@
     wipe: wipe
   };
 })();
+
+// COOKIEGATE_V011_DOMAIN_RULE_EFFECTIVE_RESOLVER
+(function(){
+  "use strict";
+
+  const API = typeof browser !== "undefined" ? browser : chrome;
+
+  function norm(x){
+    return String(x || "").replace(/\s+/g, " ").trim();
+  }
+
+  function low(x){
+    return norm(x).toLowerCase();
+  }
+
+  function storageGetAll(){
+    return new Promise(function(resolve){
+      try {
+        if(!API || !API.storage || !API.storage.local){
+          resolve({});
+          return;
+        }
+
+        const out = API.storage.local.get(null);
+
+        if(out && typeof out.then === "function"){
+          out.then(function(v){ resolve(v || {}); }).catch(function(){ resolve({}); });
+          return;
+        }
+
+        API.storage.local.get(null, function(v){ resolve(v || {}); });
+      } catch(e){
+        resolve({});
+      }
+    });
+  }
+
+  function normalizeHost(input){
+    let x = low(input);
+
+    if(!x){
+      return "";
+    }
+
+    x = x.replace(/^site:\s*/i, "");
+
+    try {
+      if(!/^https?:\/\//i.test(x)){
+        x = "https://" + x;
+      }
+
+      const u = new URL(x);
+      return String(u.hostname || "").toLowerCase().replace(/^www\./, "");
+    } catch(e){
+      x = x.replace(/^https?:\/\//i, "");
+      x = x.split("/")[0].split("?")[0].split("#")[0];
+      x = x.replace(/:\d+$/, "");
+      x = x.replace(/^www\./, "");
+      return x;
+    }
+  }
+
+  function rootDomain(host){
+    host = normalizeHost(host);
+    const parts = host.split(".").filter(Boolean);
+
+    if(parts.length <= 2){
+      return host;
+    }
+
+    const last = parts[parts.length - 1];
+    const second = parts[parts.length - 2];
+
+    if(last.length === 2 && second.length <= 3 && parts.length >= 3){
+      return parts.slice(-3).join(".");
+    }
+
+    return parts.slice(-2).join(".");
+  }
+
+  function hostMatchesRule(host, ruleDomain){
+    host = normalizeHost(host);
+    ruleDomain = rootDomain(ruleDomain);
+
+    if(!host || !ruleDomain){
+      return false;
+    }
+
+    return host === ruleDomain || host.endsWith("." + ruleDomain);
+  }
+
+  function currentSiteHost(){
+    const body = String(document.body && document.body.textContent ? document.body.textContent : "");
+    const m = body.match(/Site:\s*([^\n\r]+)/i);
+
+    if(m && m[1]){
+      return normalizeHost(m[1]);
+    }
+
+    return "";
+  }
+
+  function normalizeMode(x){
+    const v = low(x);
+
+    if(v.indexOf("strict") >= 0) return "Strict";
+    if(v.indexOf("balanced") >= 0) return "Balanced";
+    if(v.indexOf("observe") >= 0) return "Observe";
+    if(v.indexOf("off") >= 0) return "Off";
+
+    return "";
+  }
+
+  function extractRuleObjects(value, out){
+    if(!value) return;
+
+    if(Array.isArray(value)){
+      value.forEach(function(v){ extractRuleObjects(v, out); });
+      return;
+    }
+
+    if(typeof value !== "object"){
+      return;
+    }
+
+    const domain =
+      value.domain ||
+      value.host ||
+      value.hostname ||
+      value.site ||
+      value.origin ||
+      value.ruleDomain ||
+      value.targetDomain;
+
+    const mode =
+      value.mode ||
+      value.policy ||
+      value.cleanupMode ||
+      value.effectiveMode ||
+      value.cookieMode;
+
+    const active =
+      value.active !== false &&
+      value.enabled !== false &&
+      value.disabled !== true &&
+      value.status !== "disabled";
+
+    if(domain && mode && active){
+      out.push({
+        domain: normalizeHost(domain),
+        root: rootDomain(domain),
+        mode: normalizeMode(mode),
+        source: "object"
+      });
+    }
+
+    Object.keys(value).forEach(function(k){
+      if(k === "domain" || k === "host" || k === "hostname" || k === "mode" || k === "policy"){
+        return;
+      }
+
+      extractRuleObjects(value[k], out);
+    });
+  }
+
+  function extractRulesFromStorage(all){
+    const out = [];
+
+    Object.keys(all || {}).forEach(function(key){
+      const v = all[key];
+
+      if(low(key).indexOf("rule") >= 0 || low(key).indexOf("domain") >= 0){
+        extractRuleObjects(v, out);
+      } else {
+        extractRuleObjects(v, out);
+      }
+    });
+
+    const clean = [];
+
+    out.forEach(function(r){
+      if(!r.domain || !r.mode) return;
+
+      if(!clean.some(function(x){ return x.root === r.root && x.mode === r.mode; })){
+        clean.push(r);
+      }
+    });
+
+    clean.sort(function(a,b){
+      return b.root.length - a.root.length;
+    });
+
+    return clean;
+  }
+
+  function findMatchingRule(host, rules){
+    for(let i = 0; i < rules.length; i++){
+      if(hostMatchesRule(host, rules[i].root)){
+        return rules[i];
+      }
+    }
+
+    return null;
+  }
+
+  function findModeCards(){
+    const cards = Array.prototype.slice.call(document.querySelectorAll("body *")).filter(function(node){
+      const t = low(node.textContent);
+      return t === "effective" || t.indexOf("effective") === 0;
+    });
+
+    const result = [];
+
+    cards.forEach(function(label){
+      const parent = label.parentElement;
+      if(parent){
+        result.push(parent);
+      }
+    });
+
+    return result;
+  }
+
+  function updateEffectiveCard(mode, rule){
+    const cards = findModeCards();
+
+    cards.forEach(function(card){
+      const kids = Array.prototype.slice.call(card.querySelectorAll("*"));
+      let wrote = false;
+
+      kids.forEach(function(k){
+        const t = norm(k.textContent);
+
+        if(t === "Strict" || t === "Balanced" || t === "Observe" || t === "Off"){
+          k.textContent = mode;
+          wrote = true;
+        }
+      });
+
+      if(!wrote){
+        const value = document.createElement("div");
+        value.className = "cg-domain-rule-effective-value";
+        value.textContent = mode;
+        card.appendChild(value);
+      }
+
+      card.setAttribute("data-cg-domain-rule-effective", "true");
+      card.setAttribute("data-cg-domain-rule-source", rule.root);
+    });
+  }
+
+  function installBadge(host, rule){
+    let badge = document.getElementById("cgDomainRuleEffectiveBadgeV011");
+
+    if(!badge){
+      badge = document.createElement("div");
+      badge.id = "cgDomainRuleEffectiveBadgeV011";
+      badge.className = "cg-domain-rule-effective-badge";
+
+      const anchor =
+        document.querySelector(".cg-tabs") ||
+        document.querySelector("[role='tablist']") ||
+        document.body.firstElementChild ||
+        document.body;
+
+      if(anchor && anchor.parentNode && anchor !== document.body){
+        anchor.parentNode.insertBefore(badge, anchor.nextSibling);
+      } else {
+        document.body.insertBefore(badge, document.body.firstChild);
+      }
+    }
+
+    badge.textContent = "Domain rule active: " + rule.root + " → " + rule.mode;
+  }
+
+  async function resolve(){
+    const host = currentSiteHost();
+
+    if(!host){
+      return;
+    }
+
+    const all = await storageGetAll();
+    const rules = extractRulesFromStorage(all);
+    const rule = findMatchingRule(host, rules);
+
+    if(!rule || !rule.mode){
+      return;
+    }
+
+    updateEffectiveCard(rule.mode, rule);
+    installBadge(host, rule);
+
+    window.CookieGateDomainRuleEffectiveV011Last = {
+      host: host,
+      root: rootDomain(host),
+      rule: rule
+    };
+  }
+
+  function boot(){
+    setTimeout(resolve, 250);
+    setTimeout(resolve, 800);
+    setTimeout(resolve, 1600);
+
+    document.addEventListener("click", function(){
+      setTimeout(resolve, 250);
+      setTimeout(resolve, 900);
+    }, true);
+  }
+
+  document.addEventListener("DOMContentLoaded", boot);
+  window.addEventListener("load", boot);
+
+  window.CookieGateDomainRuleEffectiveResolverV011 = {
+    resolve: resolve,
+    normalizeHost: normalizeHost,
+    rootDomain: rootDomain,
+    hostMatchesRule: hostMatchesRule,
+    extractRulesFromStorage: extractRulesFromStorage
+  };
+})();

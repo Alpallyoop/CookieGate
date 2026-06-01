@@ -3580,3 +3580,28 @@ body[data-cg-view="rules"] [data-cg-v7-role="site-package"] {
   font-size: 10px;
   line-height: 1.35;
 }
+
+/* COOKIEGATE_V011_DOMAIN_RULE_EFFECTIVE_RESOLVER */
+
+.cg-domain-rule-effective-badge {
+  margin: 8px 12px 0;
+  padding: 8px 10px;
+  border: 1px solid rgba(52, 211, 153, .28);
+  border-radius: 12px;
+  background: rgba(6, 78, 59, .28);
+  color: #86efac;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+[data-cg-domain-rule-effective="true"] {
+  border-color: rgba(52, 211, 153, .44) !important;
+  box-shadow: 0 0 0 1px rgba(52, 211, 153, .08) inset !important;
+}
+
+.cg-domain-rule-effective-value {
+  margin-top: 4px;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 950;
+}
