@@ -4447,3 +4447,154 @@
     extractRulesFromStorage: extractRulesFromStorage
   };
 })();
+
+// COOKIEGATE_V011_COUNT_SEMANTICS_UI
+(function(){
+  "use strict";
+
+  function norm(x){
+    return String(x || "").replace(/\s+/g, " ").trim();
+  }
+
+  function low(x){
+    return norm(x).toLowerCase();
+  }
+
+  function makeNote(id, text){
+    let note = document.getElementById(id);
+
+    if(!note){
+      note = document.createElement("div");
+      note.id = id;
+      note.className = "cg-count-semantics-note";
+    }
+
+    note.textContent = text;
+    return note;
+  }
+
+  function findActiveSitePanel(){
+    const nodes = Array.prototype.slice.call(document.querySelectorAll("section, article, main, div"));
+
+    const hits = nodes.filter(function(node){
+      const t = low(node.textContent);
+
+      return t.indexOf("mode controls") >= 0 &&
+        t.indexOf("wipe plan") >= 0 &&
+        t.indexOf("cookies detected") >= 0;
+    });
+
+    hits.sort(function(a,b){
+      return norm(a.textContent).length - norm(b.textContent).length;
+    });
+
+    return hits[0] || null;
+  }
+
+  function findDomainToolsCard(){
+    return document.getElementById("cgDomainRemoteToolsV011");
+  }
+
+  function installActiveSiteNote(){
+    const panel = findActiveSitePanel();
+    if(!panel) return;
+
+    const note = makeNote(
+      "cgActiveSiteCountSemanticsNoteV011",
+      "Active Site counts only the current inspected site context. Domain Tools can inspect the whole typed root domain, including subdomains and paths."
+    );
+
+    const anchor = Array.prototype.slice.call(panel.querySelectorAll("*")).find(function(node){
+      return low(node.textContent).indexOf("wipe plan") >= 0;
+    });
+
+    if(anchor && anchor.parentNode && !document.getElementById(note.id)){
+      anchor.parentNode.insertBefore(note, anchor.nextSibling);
+      return;
+    }
+
+    if(!note.parentNode){
+      panel.insertBefore(note, panel.firstChild);
+    }
+  }
+
+  function installDomainToolsNote(){
+    const card = findDomainToolsCard();
+    if(!card) return;
+
+    const note = makeNote(
+      "cgDomainToolsCountSemanticsNoteV011",
+      "Domain Tools is domain-wide: amazon.com also covers www.amazon.com, subdomains, and URL paths. Auth/session cookies are preserved unless you include them."
+    );
+
+    if(!note.parentNode){
+      const subtitle = Array.prototype.slice.call(card.querySelectorAll("*")).find(function(node){
+        return low(node.textContent).indexOf("inspect or wipe cookies") >= 0;
+      });
+
+      if(subtitle && subtitle.parentNode){
+        subtitle.parentNode.insertBefore(note, subtitle.nextSibling);
+      } else {
+        card.insertBefore(note, card.firstChild);
+      }
+    }
+  }
+
+  function installBrowserObserverNote(){
+    const nodes = Array.prototype.slice.call(document.querySelectorAll("section, article, main, div"));
+
+    const panel = nodes.filter(function(node){
+      const t = low(node.textContent);
+
+      return t.indexOf("browser observer") >= 0 &&
+        t.indexOf("total cookies") >= 0 &&
+        t.indexOf("domains") >= 0 &&
+        t.indexOf("review/tracking") >= 0;
+    }).sort(function(a,b){
+      return norm(a.textContent).length - norm(b.textContent).length;
+    })[0];
+
+    if(!panel) return;
+
+    const note = makeNote(
+      "cgBrowserObserverChartSemanticsNoteV011",
+      "Browser Observer summarizes all browser-held cookies. The donut is a stable overview chart; Domain Tools handles exact domain inspection."
+    );
+
+    if(!note.parentNode){
+      const marker = Array.prototype.slice.call(panel.querySelectorAll("*")).find(function(node){
+        return low(node.textContent).indexOf("privacy: raw cookie values are not exported") >= 0;
+      });
+
+      if(marker && marker.parentNode){
+        marker.parentNode.insertBefore(note, marker);
+      } else {
+        panel.appendChild(note);
+      }
+    }
+  }
+
+  function install(){
+    try { installActiveSiteNote(); } catch(e){}
+    try { installDomainToolsNote(); } catch(e){}
+    try { installBrowserObserverNote(); } catch(e){}
+  }
+
+  function boot(){
+    setTimeout(install, 200);
+    setTimeout(install, 800);
+    setTimeout(install, 1600);
+
+    document.addEventListener("click", function(){
+      setTimeout(install, 250);
+      setTimeout(install, 900);
+    }, true);
+  }
+
+  document.addEventListener("DOMContentLoaded", boot);
+  window.addEventListener("load", boot);
+
+  window.CookieGateCountSemanticsUIV011 = {
+    install: install
+  };
+})();

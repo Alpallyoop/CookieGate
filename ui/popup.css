@@ -3605,3 +3605,17 @@ body[data-cg-view="rules"] [data-cg-v7-role="site-package"] {
   font-size: 15px;
   font-weight: 950;
 }
+
+/* COOKIEGATE_V011_COUNT_SEMANTICS_UI */
+
+.cg-count-semantics-note {
+  margin: 8px 0 10px;
+  padding: 8px 10px;
+  border: 1px solid rgba(147, 197, 253, .18);
+  border-radius: 12px;
+  background: rgba(30, 64, 175, .13);
+  color: #a9c7ff;
+  font-size: 10.5px;
+  line-height: 1.4;
+  font-weight: 750;
+}
