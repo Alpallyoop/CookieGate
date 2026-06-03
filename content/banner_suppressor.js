@@ -563,3 +563,209 @@
     scan: scan
   };
 })();
+
+// COOKIEGATE_V011_BANNER_SUPPRESSION_SAFETY_GUARD
+(function(){
+  "use strict";
+
+  const MARK = "data-cookiegate-banner-ledger-v011";
+  const SAFE_MARK = "data-cookiegate-safety-restored-v011";
+
+  function tagName(el){
+    return String(el && el.tagName ? el.tagName : "").toLowerCase();
+  }
+
+  function txt(el){
+    try {
+      return String((el.innerText || el.textContent || "")).replace(/\s+/g, " ").trim().toLowerCase();
+    } catch(e){
+      return "";
+    }
+  }
+
+  function cls(el){
+    try {
+      return String((el.id || "") + " " + (el.className || "") + " " + (el.getAttribute("role") || "") + " " + (el.getAttribute("aria-label") || "")).toLowerCase();
+    } catch(e){
+      return "";
+    }
+  }
+
+  function isNeverHide(el){
+    const tag = tagName(el);
+    if(!tag) return true;
+
+    if(tag === "html" || tag === "body" || tag === "main" || tag === "article" || tag === "header" || tag === "footer"){
+      return true;
+    }
+
+    const idClass = cls(el);
+
+    if(idClass.match(/\b(root|app|page|site|layout|shell|container|content|main-content|application)\b/)){
+      return true;
+    }
+
+    return false;
+  }
+
+  function rectOf(el){
+    try {
+      return el.getBoundingClientRect();
+    } catch(e){
+      return null;
+    }
+  }
+
+  function areaRatio(el){
+    const r = rectOf(el);
+    if(!r) return 1;
+
+    const vw = Math.max(1, window.innerWidth || 1);
+    const vh = Math.max(1, window.innerHeight || 1);
+    const area = Math.max(0, r.width) * Math.max(0, r.height);
+
+    return area / (vw * vh);
+  }
+
+  function positionOf(el){
+    try {
+      return String(getComputedStyle(el).position || "").toLowerCase();
+    } catch(e){
+      return "";
+    }
+  }
+
+  function isClearlyBannerOrModal(el){
+    const hay = cls(el) + " " + txt(el);
+
+    const hasBannerSignal =
+      hay.indexOf("cookie") >= 0 ||
+      hay.indexOf("consent") >= 0 ||
+      hay.indexOf("privacy") >= 0 ||
+      hay.indexOf("gdpr") >= 0 ||
+      hay.indexOf("ccpa") >= 0 ||
+      hay.indexOf("onetrust") >= 0 ||
+      hay.indexOf("didomi") >= 0 ||
+      hay.indexOf("usercentrics") >= 0 ||
+      hay.indexOf("trustarc") >= 0 ||
+      hay.indexOf("quantcast") >= 0;
+
+    const role = String(el.getAttribute("role") || "").toLowerCase();
+    const idClass = cls(el);
+
+    const modalSignal =
+      role === "dialog" ||
+      role === "alertdialog" ||
+      idClass.indexOf("modal") >= 0 ||
+      idClass.indexOf("overlay") >= 0 ||
+      idClass.indexOf("popup") >= 0;
+
+    return hasBannerSignal && modalSignal;
+  }
+
+  function isSafeSuppressTarget(el){
+    if(!el || el.nodeType !== 1) return false;
+    if(isNeverHide(el)) return false;
+
+    const r = rectOf(el);
+    if(!r) return false;
+
+    if(r.width < 120 || r.height < 35) return false;
+
+    const pos = positionOf(el);
+    const fixedish = pos === "fixed" || pos === "sticky" || pos === "absolute";
+
+    if(!fixedish){
+      return false;
+    }
+
+    const ratio = areaRatio(el);
+
+    if(ratio > 0.55 && !isClearlyBannerOrModal(el)){
+      return false;
+    }
+
+    if(ratio > 0.85){
+      return false;
+    }
+
+    return true;
+  }
+
+  function restoreUnsafeSuppressed(){
+    const nodes = Array.prototype.slice.call(document.querySelectorAll("[" + MARK + "='1']"));
+
+    nodes.forEach(function(el){
+      if(isSafeSuppressTarget(el)) return;
+
+      try {
+        el.style.removeProperty("display");
+        el.style.removeProperty("visibility");
+        el.style.removeProperty("pointer-events");
+        el.setAttribute(SAFE_MARK, "1");
+      } catch(e){}
+    });
+  }
+
+  function wrapOldScan(){
+    if(!window.CookieGateBannerLifetimeLedgerV011 || typeof window.CookieGateBannerLifetimeLedgerV011.scan !== "function"){
+      return false;
+    }
+
+    if(window.CookieGateBannerLifetimeLedgerV011.__safetyWrapped){
+      return true;
+    }
+
+    const oldScan = window.CookieGateBannerLifetimeLedgerV011.scan;
+
+    window.CookieGateBannerLifetimeLedgerV011.scan = async function(){
+      restoreUnsafeSuppressed();
+
+      await oldScan();
+
+      restoreUnsafeSuppressed();
+    };
+
+    window.CookieGateBannerLifetimeLedgerV011.__safetyWrapped = true;
+    return true;
+  }
+
+  function boot(){
+    restoreUnsafeSuppressed();
+
+    if(!wrapOldScan()){
+      setTimeout(wrapOldScan, 300);
+      setTimeout(wrapOldScan, 900);
+      setTimeout(wrapOldScan, 1800);
+    }
+
+    setTimeout(restoreUnsafeSuppressed, 500);
+    setTimeout(restoreUnsafeSuppressed, 1500);
+    setTimeout(restoreUnsafeSuppressed, 3500);
+
+    try {
+      const mo = new MutationObserver(function(){
+        clearTimeout(window.__cookieGateBannerSafetyTimerV011);
+        window.__cookieGateBannerSafetyTimerV011 = setTimeout(restoreUnsafeSuppressed, 150);
+      });
+
+      mo.observe(document.documentElement || document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ["style", MARK]
+      });
+    } catch(e){}
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+
+  window.CookieGateBannerSuppressionSafetyGuardV011 = {
+    isSafeSuppressTarget: isSafeSuppressTarget,
+    restoreUnsafeSuppressed: restoreUnsafeSuppressed
+  };
+})();
