@@ -2356,18 +2356,68 @@
         '</div>';
     }).join("");
 
+    // COOKIEGATE_V011_NATIVE_OBSERVER_DONUT_PATCH
+    function pctV011(value,totalValue){
+      const t = Math.max(1, Number(totalValue || 0));
+      return Math.round((Number(value || 0) / t) * 100);
+    }
+
+    function segV011(value,totalValue,offset,color){
+      const r = 35;
+      const c = 2 * Math.PI * r;
+      const safeTotal = Math.max(1, Number(totalValue || 0));
+      const safeValue = Math.max(0, Number(value || 0));
+
+      if(safeValue <= 0){
+        return "";
+      }
+
+      const dash = (safeValue / safeTotal) * c;
+      const gap = Math.max(0, c - dash);
+      const off = -1 * ((offset / safeTotal) * c);
+
+      return '<circle class="cg-observer-svg-seg-v011" cx="50" cy="50" r="' + r + '" stroke="' + color + '" stroke-dasharray="' + dash.toFixed(3) + ' ' + gap.toFixed(3) + '" stroke-dashoffset="' + off.toFixed(3) + '"></circle>';
+    }
+
+    const donutRowsV011 = [
+      { label: "Auth/session", count: Number(cls.authSession || 0), color: "#34d399", key: "auth" },
+      { label: "Preferences", count: Number(cls.preferences || 0), color: "#fbbf24", key: "prefs" },
+      { label: "Tracking", count: Number(cls.tracking || 0), color: "#60a5fa", key: "tracking" },
+      { label: "Unknown", count: Number(cls.unknown || 0), color: "#fb7185", key: "unknown" }
+    ];
+
+    let donutOffsetV011 = 0;
+    const donutSegmentsV011 = donutRowsV011.map(function(row){
+      const out = segV011(row.count,total,donutOffsetV011,row.color);
+      donutOffsetV011 += row.count;
+      return out;
+    }).join("");
+
+    const donutLegendV011 = donutRowsV011.map(function(row){
+      return '<div class="cg-observer-svg-legend-row-v011">' +
+        '<span class="cg-observer-svg-dot-v011" style="background:' + row.color + '"></span>' +
+        '<span class="cg-observer-svg-label-v011">' + row.label + '</span>' +
+        '<b>' + row.count + '</b>' +
+        '<span>' + pctV011(row.count,total) + '%</span>' +
+      '</div>';
+    }).join("");
+
+    const reviewPctV011 = pctV011((a.reviewOrTracking || 0), total);
+
     body.innerHTML =
       '<div class="cg-observer-row"><span>Total cookies</span><b>' + total + '</b></div>' +
       '<div class="cg-observer-row"><span>Domains</span><b>' + (a.totalDomains || 0) + '</b></div>' +
       '<div class="cg-observer-row"><span>Review/tracking</span><b>' + (a.reviewOrTracking || 0) + '</b></div>' +
-      '<div class="cg-observer-viz">' +
-        '<div class="cg-observer-donut" style="--known:' + knownPct + '%"><span>' + knownPct + '%</span></div>' +
-        '<div class="cg-observer-legend">' +
-          '<div class="cg-observer-legend-row"><span>Auth/session</span><b>' + (cls.authSession || 0) + '</b></div>' +
-          '<div class="cg-observer-legend-row"><span>Preferences</span><b>' + (cls.preferences || 0) + '</b></div>' +
-          '<div class="cg-observer-legend-row"><span>Tracking</span><b>' + (cls.tracking || 0) + '</b></div>' +
-          '<div class="cg-observer-legend-row"><span>Unknown</span><b>' + (cls.unknown || 0) + '</b></div>' +
+      '<div class="cg-observer-viz cg-observer-svg-v011">' +
+        '<div class="cg-observer-svg-wrap-v011">' +
+          '<svg class="cg-observer-svg-donut-v011" viewBox="0 0 100 100" aria-label="Cookie category breakdown">' +
+            '<circle class="cg-observer-svg-bg-v011" cx="50" cy="50" r="35"></circle>' +
+            donutSegmentsV011 +
+            '<text class="cg-observer-svg-main-v011" x="50" y="46">' + reviewPctV011 + '%</text>' +
+            '<text class="cg-observer-svg-sub-v011" x="50" y="61">review</text>' +
+          '</svg>' +
         '</div>' +
+        '<div class="cg-observer-svg-legend-v011">' + donutLegendV011 + '</div>' +
       '</div>' +
       '<div class="cg-observer-bars">' + bars + '</div>' +
       '<div class="cg-observer-privacy-note good"><b>Privacy:</b> raw cookie values are not exported.</div>';

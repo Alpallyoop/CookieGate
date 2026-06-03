@@ -3619,3 +3619,95 @@ body[data-cg-view="rules"] [data-cg-v7-role="site-package"] {
   line-height: 1.4;
   font-weight: 750;
 }
+
+/* COOKIEGATE_V011_NATIVE_OBSERVER_DONUT_PATCH */
+
+.cg-observer-svg-v011 {
+  grid-template-columns: 92px minmax(0, 1fr) !important;
+}
+
+.cg-observer-svg-wrap-v011 {
+  width: 82px !important;
+  height: 82px !important;
+  position: relative !important;
+}
+
+.cg-observer-svg-donut-v011 {
+  width: 82px !important;
+  height: 82px !important;
+  display: block !important;
+  transform: rotate(-90deg) !important;
+  overflow: visible !important;
+}
+
+.cg-observer-svg-bg-v011 {
+  fill: none !important;
+  stroke: rgba(30, 41, 59, .95) !important;
+  stroke-width: 16 !important;
+}
+
+.cg-observer-svg-seg-v011 {
+  fill: none !important;
+  stroke-width: 16 !important;
+  stroke-linecap: butt !important;
+  vector-effect: non-scaling-stroke !important;
+}
+
+.cg-observer-svg-main-v011,
+.cg-observer-svg-sub-v011 {
+  transform: rotate(90deg) !important;
+  transform-origin: 50px 50px !important;
+  text-anchor: middle !important;
+  dominant-baseline: middle !important;
+  fill: #ffffff !important;
+}
+
+.cg-observer-svg-main-v011 {
+  font-size: 16px !important;
+  font-weight: 950 !important;
+}
+
+.cg-observer-svg-sub-v011 {
+  font-size: 8px !important;
+  font-weight: 800 !important;
+  fill: #93a4c3 !important;
+}
+
+.cg-observer-svg-legend-v011 {
+  display: grid !important;
+  gap: 4px !important;
+  min-width: 0 !important;
+}
+
+.cg-observer-svg-legend-row-v011 {
+  display: grid !important;
+  grid-template-columns: 9px minmax(0, 1fr) 32px 34px !important;
+  gap: 6px !important;
+  align-items: center !important;
+  color: #a9b2c3 !important;
+  font-size: 10px !important;
+}
+
+.cg-observer-svg-dot-v011 {
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 999px !important;
+  display: inline-block !important;
+}
+
+.cg-observer-svg-label-v011 {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.cg-observer-svg-legend-row-v011 b {
+  color: #ffffff !important;
+  text-align: right !important;
+}
+
+.cg-observer-svg-legend-row-v011 span:last-child {
+  color: #93c5fd !important;
+  text-align: right !important;
+}
