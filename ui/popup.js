@@ -4800,3 +4800,638 @@
     renameDomainRules: renameDomainRules
   };
 })();
+
+// COOKIEGATE_V011_DOMAIN_OPS_LOCKING
+(function(){
+  "use strict";
+
+  const API = typeof browser !== "undefined" ? browser : chrome;
+  const RULES_KEY = "cookiegate.domainOps.rules.v011";
+
+  function norm(x){
+    return String(x || "").replace(/\s+/g, " ").trim();
+  }
+
+  function low(x){
+    return norm(x).toLowerCase();
+  }
+
+  function storageGet(key){
+    return new Promise(function(resolve){
+      try {
+        if(!API || !API.storage || !API.storage.local){
+          resolve({});
+          return;
+        }
+
+        const out = API.storage.local.get(key);
+
+        if(out && typeof out.then === "function"){
+          out.then(function(v){ resolve(v || {}); }).catch(function(){ resolve({}); });
+          return;
+        }
+
+        API.storage.local.get(key, function(v){ resolve(v || {}); });
+      } catch(e){
+        resolve({});
+      }
+    });
+  }
+
+  function storageSet(obj){
+    return new Promise(function(resolve){
+      try {
+        if(!API || !API.storage || !API.storage.local){
+          resolve();
+          return;
+        }
+
+        const out = API.storage.local.set(obj);
+
+        if(out && typeof out.then === "function"){
+          out.then(resolve).catch(resolve);
+          return;
+        }
+
+        API.storage.local.set(obj, resolve);
+      } catch(e){
+        resolve();
+      }
+    });
+  }
+
+  function sanitizeAddress(input){
+    let x = low(input);
+
+    if(!x){
+      return "";
+    }
+
+    x = x.replace(/^site:\s*/i, "");
+
+    try {
+      if(!/^https?:\/\//i.test(x)){
+        x = "https://" + x;
+      }
+
+      const u = new URL(x);
+      x = String(u.hostname || "").toLowerCase();
+    } catch(e){
+      x = x.replace(/^https?:\/\//i, "");
+      x = x.split("/")[0].split("?")[0].split("#")[0];
+      x = x.replace(/:\d+$/, "");
+    }
+
+    x = x.replace(/^\.+|\.+$/g, "");
+    x = x.replace(/^www\./, "");
+
+    if(x.length > 253){
+      return "";
+    }
+
+    if(!/^[a-z0-9.-]+$/.test(x)){
+      return "";
+    }
+
+    if(x.indexOf("..") >= 0){
+      return "";
+    }
+
+    if(x.split(".").length < 2){
+      return "";
+    }
+
+    return x;
+  }
+
+  function rootDomain(host){
+    host = sanitizeAddress(host);
+    if(!host) return "";
+
+    const parts = host.split(".").filter(Boolean);
+
+    if(parts.length <= 2){
+      return host;
+    }
+
+    const last = parts[parts.length - 1];
+    const second = parts[parts.length - 2];
+
+    if(last.length === 2 && second.length <= 3 && parts.length >= 3){
+      return parts.slice(-3).join(".");
+    }
+
+    return parts.slice(-2).join(".");
+  }
+
+  function hostMatchesRule(host, root){
+    host = sanitizeAddress(host);
+    root = rootDomain(root);
+
+    if(!host || !root){
+      return false;
+    }
+
+    return host === root || host.endsWith("." + root);
+  }
+
+  function currentHost(){
+    const body = String(document.body && document.body.textContent ? document.body.textContent : "");
+    const m = body.match(/Site:\s*([^\n\r]+)/i);
+
+    if(m && m[1]){
+      return sanitizeAddress(m[1]);
+    }
+
+    return "";
+  }
+
+  function findPanelByText(required){
+    const nodes = Array.prototype.slice.call(document.querySelectorAll("section, article, main, div"));
+
+    const hits = nodes.filter(function(node){
+      const t = low(node.textContent);
+      return required.every(function(r){ return t.indexOf(r) >= 0; });
+    });
+
+    hits.sort(function(a,b){
+      return norm(a.textContent).length - norm(b.textContent).length;
+    });
+
+    return hits[0] || null;
+  }
+
+  function domainOpsPanel(){
+    return findPanelByText(["domain ops", "save rule", "export rules"]);
+  }
+
+  function activeSitePanel(){
+    return findPanelByText(["mode controls", "global mode", "site mode"]);
+  }
+
+  function getDomainInput(){
+    const panel = domainOpsPanel();
+    if(!panel) return null;
+
+    const inputs = Array.prototype.slice.call(panel.querySelectorAll("input[type='text'], input:not([type])"));
+    return inputs[0] || null;
+  }
+
+  function getSelectedMode(){
+    const panel = domainOpsPanel();
+    if(!panel) return "Strict";
+
+    const selects = Array.prototype.slice.call(panel.querySelectorAll("select"));
+
+    for(let i = 0; i < selects.length; i++){
+      const v = norm(selects[i].value || selects[i].selectedOptions && selects[i].selectedOptions[0] && selects[i].selectedOptions[0].textContent);
+      if(v){
+        if(low(v).indexOf("balanced") >= 0) return "Balanced";
+        if(low(v).indexOf("observe") >= 0) return "Observe";
+        if(low(v).indexOf("off") >= 0) return "Off";
+        if(low(v).indexOf("strict") >= 0) return "Strict";
+      }
+    }
+
+    const text = low(panel.textContent);
+    if(text.indexOf("balanced") >= 0 && text.indexOf("strict") < 0) return "Balanced";
+
+    return "Strict";
+  }
+
+  function readCleanupFlags(){
+    const panel = domainOpsPanel();
+    const flags = {
+      cookies: true,
+      cache: false,
+      localStorage: false,
+      indexedDb: false,
+      serviceWorkers: false,
+      preserveAuth: true
+    };
+
+    if(!panel) return flags;
+
+    const boxes = Array.prototype.slice.call(panel.querySelectorAll("input[type='checkbox']"));
+
+    boxes.forEach(function(cb){
+      const label = low((cb.closest("label") && cb.closest("label").textContent) || cb.parentElement && cb.parentElement.textContent || "");
+
+      if(label.indexOf("cookies") >= 0) flags.cookies = cb.checked;
+      if(label.indexOf("cache") >= 0) flags.cache = cb.checked;
+      if(label.indexOf("local storage") >= 0) flags.localStorage = cb.checked;
+      if(label.indexOf("indexeddb") >= 0 || label.indexOf("indexed db") >= 0) flags.indexedDb = cb.checked;
+      if(label.indexOf("service worker") >= 0) flags.serviceWorkers = cb.checked;
+      if(label.indexOf("preserve auth") >= 0 || label.indexOf("auth/session") >= 0) flags.preserveAuth = cb.checked;
+    });
+
+    return flags;
+  }
+
+  async function loadRules(){
+    const got = await storageGet(RULES_KEY);
+    const arr = Array.isArray(got[RULES_KEY]) ? got[RULES_KEY] : [];
+    return arr.filter(function(r){ return r && r.root; });
+  }
+
+  async function saveRules(rules){
+    await storageSet({ [RULES_KEY]: rules });
+  }
+
+  function upsertRule(rules, rule){
+    const out = rules.filter(function(r){
+      return r.root !== rule.root;
+    });
+
+    out.unshift(rule);
+    return out;
+  }
+
+  async function saveRuleFromForm(){
+    const input = getDomainInput();
+    const panel = domainOpsPanel();
+
+    if(!input || !panel){
+      return;
+    }
+
+    const host = sanitizeAddress(input.value);
+    const root = rootDomain(host);
+
+    if(!root){
+      flash(panel, "Invalid domain or URL. Use a normal domain like amazon.com or https://amazon.com/path.", false);
+      return;
+    }
+
+    const mode = getSelectedMode();
+    const now = new Date().toISOString();
+    const flags = readCleanupFlags();
+    const rules = await loadRules();
+
+    const rule = {
+      schema: "cookiegate.domain_ops.rule.v011",
+      root: root,
+      host: host,
+      mode: mode,
+      active: true,
+      locked: true,
+      cleanup: flags,
+      reachability: "not_checked",
+      checked_at: null,
+      updated_at: now
+    };
+
+    await saveRules(upsertRule(rules, rule));
+
+    input.value = "";
+    flash(panel, "Saved and activated: " + root + " → " + mode + " (locked by Domain Ops)", true);
+    markButtonsGreen(["save rule"]);
+
+    renderRuleList();
+    applyCurrentLock();
+  }
+
+  async function checkCurrentInput(){
+    const input = getDomainInput();
+    const panel = domainOpsPanel();
+
+    if(!input || !panel) return;
+
+    const host = sanitizeAddress(input.value);
+    const root = rootDomain(host);
+
+    if(!root){
+      flash(panel, "Invalid domain or URL. Cannot check.", false);
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const rules = await loadRules();
+    let found = false;
+
+    const next = rules.map(function(r){
+      if(r.root === root){
+        found = true;
+        r.reachability = "reachable";
+        r.checked_at = now;
+        r.active = true;
+        r.locked = true;
+      }
+
+      return r;
+    });
+
+    if(!found){
+      next.unshift({
+        schema: "cookiegate.domain_ops.rule.v011",
+        root: root,
+        host: host,
+        mode: getSelectedMode(),
+        active: true,
+        locked: true,
+        cleanup: readCleanupFlags(),
+        reachability: "reachable",
+        checked_at: now,
+        updated_at: now
+      });
+    }
+
+    await saveRules(next);
+
+    flash(panel, "Reachable and active: " + root, true);
+    markButtonsGreen(["check", "check site"]);
+    renderRuleList();
+    applyCurrentLock();
+  }
+
+  function flash(panel, msg, ok){
+    let box = document.getElementById("cgDomainOpsStatusV011");
+
+    if(!box){
+      box = document.createElement("div");
+      box.id = "cgDomainOpsStatusV011";
+      box.className = "cg-domain-ops-status-v011";
+
+      const input = getDomainInput();
+      if(input && input.parentNode){
+        input.parentNode.insertBefore(box, input.nextSibling);
+      } else {
+        panel.insertBefore(box, panel.firstChild);
+      }
+    }
+
+    box.textContent = msg;
+    box.setAttribute("data-ok", ok ? "true" : "false");
+  }
+
+  function markButtonsGreen(labels){
+    const panel = domainOpsPanel();
+    if(!panel) return;
+
+    const wanted = labels.map(low);
+
+    Array.prototype.slice.call(panel.querySelectorAll("button")).forEach(function(btn){
+      const t = low(btn.textContent);
+
+      if(wanted.some(function(w){ return t === w || t.indexOf(w) >= 0; })){
+        btn.classList.add("cg-domain-ops-green-btn-v011");
+      }
+    });
+  }
+
+  function setModeForm(mode){
+    const panel = domainOpsPanel();
+    if(!panel) return;
+
+    Array.prototype.slice.call(panel.querySelectorAll("select")).forEach(function(sel){
+      Array.prototype.slice.call(sel.options || []).forEach(function(opt){
+        if(low(opt.textContent).indexOf(low(mode)) >= 0 || low(opt.value).indexOf(low(mode)) >= 0){
+          sel.value = opt.value;
+        }
+      });
+    });
+  }
+
+  function setCleanupForm(flags){
+    const panel = domainOpsPanel();
+    if(!panel || !flags) return;
+
+    Array.prototype.slice.call(panel.querySelectorAll("input[type='checkbox']")).forEach(function(cb){
+      const label = low((cb.closest("label") && cb.closest("label").textContent) || cb.parentElement && cb.parentElement.textContent || "");
+
+      if(label.indexOf("cookies") >= 0) cb.checked = !!flags.cookies;
+      if(label.indexOf("cache") >= 0) cb.checked = !!flags.cache;
+      if(label.indexOf("local storage") >= 0) cb.checked = !!flags.localStorage;
+      if(label.indexOf("indexeddb") >= 0 || label.indexOf("indexed db") >= 0) cb.checked = !!flags.indexedDb;
+      if(label.indexOf("service worker") >= 0) cb.checked = !!flags.serviceWorkers;
+      if(label.indexOf("preserve auth") >= 0 || label.indexOf("auth/session") >= 0) cb.checked = flags.preserveAuth !== false;
+    });
+  }
+
+  async function editRule(root){
+    const rules = await loadRules();
+    const rule = rules.find(function(r){ return r.root === root; });
+    const input = getDomainInput();
+
+    if(!rule || !input) return;
+
+    input.value = rule.root;
+    setModeForm(rule.mode || "Strict");
+    setCleanupForm(rule.cleanup || {});
+    flash(domainOpsPanel(), "Editing: " + rule.root + ". Save rule updates this existing rule.", true);
+  }
+
+  async function removeRule(root){
+    const rules = await loadRules();
+    await saveRules(rules.filter(function(r){ return r.root !== root; }));
+    renderRuleList();
+    applyCurrentLock();
+  }
+
+  async function renderRuleList(){
+    const panel = domainOpsPanel();
+    if(!panel) return;
+
+    let list = document.getElementById("cgDomainOpsManagedRulesV011");
+
+    if(!list){
+      list = document.createElement("div");
+      list.id = "cgDomainOpsManagedRulesV011";
+      list.className = "cg-domain-ops-rules-v011";
+      panel.appendChild(list);
+    }
+
+    const rules = await loadRules();
+    list.textContent = "";
+
+    if(!rules.length){
+      return;
+    }
+
+    rules.forEach(function(rule){
+      const card = document.createElement("div");
+      card.className = "cg-domain-ops-rule-card-v011";
+
+      const top = document.createElement("div");
+      top.className = "cg-domain-ops-rule-top-v011";
+
+      const name = document.createElement("b");
+      name.textContent = rule.root;
+
+      const state = document.createElement("span");
+      state.textContent = (rule.active ? "active" : "inactive") + (rule.locked ? " / locked" : "");
+
+      top.appendChild(name);
+      top.appendChild(state);
+
+      const meta = document.createElement("div");
+      meta.className = "cg-domain-ops-rule-meta-v011";
+      meta.textContent = "Mode: " + (rule.mode || "Strict") + " | Applies to " + rule.root + ", www." + rule.root + ", subdomains, and URL paths.";
+
+      const actions = document.createElement("div");
+      actions.className = "cg-domain-ops-rule-actions-v011";
+
+      const edit = document.createElement("button");
+      edit.type = "button";
+      edit.textContent = "Edit";
+      edit.addEventListener("click", function(){ editRule(rule.root); });
+
+      const unlock = document.createElement("button");
+      unlock.type = "button";
+      unlock.textContent = rule.locked ? "Unlock" : "Lock";
+      unlock.addEventListener("click", async function(){
+        const rs = await loadRules();
+        rs.forEach(function(r){
+          if(r.root === rule.root){
+            r.locked = !r.locked;
+            r.active = true;
+            r.updated_at = new Date().toISOString();
+          }
+        });
+        await saveRules(rs);
+        renderRuleList();
+        applyCurrentLock();
+      });
+
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.textContent = "Remove";
+      remove.addEventListener("click", function(){ removeRule(rule.root); });
+
+      actions.appendChild(edit);
+      actions.appendChild(unlock);
+      actions.appendChild(remove);
+
+      card.appendChild(top);
+      card.appendChild(meta);
+      card.appendChild(actions);
+
+      list.appendChild(card);
+    });
+  }
+
+  async function findRuleForCurrentHost(){
+    const host = currentHost();
+    if(!host) return null;
+
+    const rules = await loadRules();
+
+    for(let i = 0; i < rules.length; i++){
+      const r = rules[i];
+
+      if(r.active && hostMatchesRule(host, r.root)){
+        return r;
+      }
+    }
+
+    return null;
+  }
+
+  function writeEffectiveMode(mode){
+    Array.prototype.slice.call(document.querySelectorAll("body *")).forEach(function(node){
+      const t = norm(node.textContent);
+
+      if(t === "Strict" || t === "Balanced" || t === "Observe" || t === "Off"){
+        const parentText = low(node.parentElement && node.parentElement.textContent);
+
+        if(parentText.indexOf("effective") >= 0){
+          node.textContent = mode;
+        }
+      }
+    });
+  }
+
+  function disableActiveSiteModeControls(rule){
+    const panel = activeSitePanel();
+    if(!panel) return;
+
+    Array.prototype.slice.call(panel.querySelectorAll("select, button")).forEach(function(el){
+      const txt = low(el.textContent || el.getAttribute("aria-label") || "");
+
+      if(el.tagName && el.tagName.toLowerCase() === "select"){
+        el.disabled = true;
+        el.setAttribute("data-cg-domain-ops-locked", "true");
+      }
+
+      if(txt.indexOf("site mode") >= 0 || txt.indexOf("global mode") >= 0){
+        el.setAttribute("data-cg-domain-ops-locked", "true");
+      }
+    });
+
+    let note = document.getElementById("cgDomainOpsLockNoticeV011");
+
+    if(!note){
+      note = document.createElement("div");
+      note.id = "cgDomainOpsLockNoticeV011";
+      note.className = "cg-domain-ops-lock-notice-v011";
+      panel.insertBefore(note, panel.firstChild);
+    }
+
+    note.textContent = "Currently running in " + rule.mode + " mode — locked by Domain Ops rule " + rule.root + ". Change or unlock it in Domain Ops.";
+  }
+
+  async function applyCurrentLock(){
+    const rule = await findRuleForCurrentHost();
+
+    if(!rule){
+      return;
+    }
+
+    writeEffectiveMode(rule.mode || "Strict");
+
+    if(rule.locked){
+      disableActiveSiteModeControls(rule);
+    }
+
+    window.CookieGateDomainOpsCurrentLockV011 = rule;
+  }
+
+  function interceptNativeButtons(){
+    document.addEventListener("click", function(ev){
+      const btn = ev.target && ev.target.closest ? ev.target.closest("button") : null;
+      if(!btn) return;
+
+      const t = low(btn.textContent);
+
+      if(t === "save rule"){
+        ev.preventDefault();
+        ev.stopPropagation();
+        saveRuleFromForm();
+      }
+
+      if(t === "check" || t === "check site"){
+        ev.preventDefault();
+        ev.stopPropagation();
+        checkCurrentInput();
+      }
+    }, true);
+  }
+
+  function boot(){
+    interceptNativeButtons();
+
+    setTimeout(renderRuleList, 250);
+    setTimeout(applyCurrentLock, 300);
+
+    setTimeout(renderRuleList, 900);
+    setTimeout(applyCurrentLock, 1000);
+
+    document.addEventListener("click", function(){
+      setTimeout(renderRuleList, 250);
+      setTimeout(applyCurrentLock, 350);
+    }, true);
+  }
+
+  document.addEventListener("DOMContentLoaded", boot);
+  window.addEventListener("load", boot);
+
+  window.CookieGateDomainOpsLockingV011 = {
+    sanitizeAddress: sanitizeAddress,
+    rootDomain: rootDomain,
+    hostMatchesRule: hostMatchesRule,
+    saveRuleFromForm: saveRuleFromForm,
+    checkCurrentInput: checkCurrentInput,
+    applyCurrentLock: applyCurrentLock,
+    loadRules: loadRules
+  };
+})();
