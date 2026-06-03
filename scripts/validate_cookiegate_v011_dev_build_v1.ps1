@@ -195,6 +195,9 @@ $Report = [ordered]@{
 $ReportPath = Join-Path $ProofDir 'v011_dev_build_validation_report.json'
 Write-Utf8NoBomLf $ReportPath ($Report | ConvertTo-Json -Depth 20)
 
-Write-Host 'COOKIEGATE_V011_DEV_BUILD_VALIDATE_OK' -ForegroundColor Green
+
+if($PopupJs -notmatch 'COOKIEGATE_V011_DOMAIN_OPS_FORM_POLISH'){
+  Die 'V011_VALIDATE_FAIL:POPUP_MARKER_MISSING' 'COOKIEGATE_V011_DOMAIN_OPS_FORM_POLISH'
+}Write-Host 'COOKIEGATE_V011_DEV_BUILD_VALIDATE_OK' -ForegroundColor Green
 Write-Host ('BUILD: ' + $Build) -ForegroundColor Green
 Write-Host ('REPORT: ' + $ReportPath) -ForegroundColor Green
