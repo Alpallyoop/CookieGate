@@ -311,3 +311,255 @@
     settingKey: SETTING_KEY
   };
 })();
+
+// COOKIEGATE_V011_BANNER_LIFETIME_LEDGER
+(function(){
+  "use strict";
+
+  const API = typeof browser !== "undefined" ? browser : chrome;
+  const ENABLED_KEY = "cookiegate.bannerSuppression.enabled";
+  const EVENTS_KEY = "cookiegate.bannerSuppression.events.v1";
+  const STATS_KEY = "cookiegate.bannerSuppression.stats.v1";
+  const SEEN_ATTR = "data-cookiegate-banner-ledger-v011";
+
+  function host(){
+    try {
+      return String(location.hostname || "").toLowerCase().replace(/^www\./, "");
+    } catch(e){
+      return "";
+    }
+  }
+
+  function storageGet(keys){
+    return new Promise(function(resolve){
+      try {
+        if(!API || !API.storage || !API.storage.local){
+          resolve({});
+          return;
+        }
+
+        const out = API.storage.local.get(keys);
+
+        if(out && typeof out.then === "function"){
+          out.then(function(v){ resolve(v || {}); }).catch(function(){ resolve({}); });
+          return;
+        }
+
+        API.storage.local.get(keys, function(v){ resolve(v || {}); });
+      } catch(e){
+        resolve({});
+      }
+    });
+  }
+
+  function storageSet(obj){
+    return new Promise(function(resolve){
+      try {
+        if(!API || !API.storage || !API.storage.local){
+          resolve();
+          return;
+        }
+
+        const out = API.storage.local.set(obj);
+
+        if(out && typeof out.then === "function"){
+          out.then(resolve).catch(resolve);
+          return;
+        }
+
+        API.storage.local.set(obj, resolve);
+      } catch(e){
+        resolve();
+      }
+    });
+  }
+
+  function textOf(el){
+    try {
+      return String((el.innerText || el.textContent || "")).replace(/\s+/g, " ").trim().toLowerCase();
+    } catch(e){
+      return "";
+    }
+  }
+
+  function looksLikeBanner(el){
+    if(!el || el.nodeType !== 1) return false;
+    if(el.hasAttribute(SEEN_ATTR)) return false;
+
+    const id = String(el.id || "").toLowerCase();
+    const cls = String(el.className || "").toLowerCase();
+    const role = String(el.getAttribute("role") || "").toLowerCase();
+    const label = String(el.getAttribute("aria-label") || "").toLowerCase();
+    const txt = textOf(el);
+
+    const hay = id + " " + cls + " " + role + " " + label + " " + txt;
+
+    const keyword =
+      hay.indexOf("cookie") >= 0 ||
+      hay.indexOf("cookies") >= 0 ||
+      hay.indexOf("consent") >= 0 ||
+      hay.indexOf("privacy") >= 0 ||
+      hay.indexOf("gdpr") >= 0 ||
+      hay.indexOf("ccpa") >= 0 ||
+      hay.indexOf("onetrust") >= 0 ||
+      hay.indexOf("didomi") >= 0 ||
+      hay.indexOf("quantcast") >= 0 ||
+      hay.indexOf("usercentrics") >= 0 ||
+      hay.indexOf("trustarc") >= 0 ||
+      hay.indexOf("cmp") >= 0;
+
+    if(!keyword) return false;
+
+    const rect = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
+    if(!rect) return false;
+
+    const visibleSize = rect.width >= 120 && rect.height >= 35;
+    const fixedish = (getComputedStyle(el).position || "").match(/fixed|sticky|absolute/i);
+
+    return visibleSize && (fixedish || rect.top < 220 || rect.bottom > (window.innerHeight - 220));
+  }
+
+  function candidateNodes(){
+    const selector = [
+      "[id*='cookie' i]",
+      "[class*='cookie' i]",
+      "[id*='consent' i]",
+      "[class*='consent' i]",
+      "[id*='privacy' i]",
+      "[class*='privacy' i]",
+      "[id*='gdpr' i]",
+      "[class*='gdpr' i]",
+      "[id*='onetrust' i]",
+      "[class*='onetrust' i]",
+      "[id*='didomi' i]",
+      "[class*='didomi' i]",
+      "[id*='usercentrics' i]",
+      "[class*='usercentrics' i]",
+      "[id*='cmp' i]",
+      "[class*='cmp' i]",
+      "[role='dialog']",
+      "[aria-label*='cookie' i]",
+      "[aria-label*='privacy' i]"
+    ].join(",");
+
+    try {
+      return Array.prototype.slice.call(document.querySelectorAll(selector));
+    } catch(e){
+      return [];
+    }
+  }
+
+  async function enabled(){
+    const got = await storageGet(ENABLED_KEY);
+    if(Object.prototype.hasOwnProperty.call(got, ENABLED_KEY)){
+      return got[ENABLED_KEY] !== false;
+    }
+    return true;
+  }
+
+  async function record(kind, count){
+    if(!count || count <= 0) return;
+
+    const now = new Date().toISOString();
+    const h = host();
+    const got = await storageGet([EVENTS_KEY, STATS_KEY]);
+
+    const events = Array.isArray(got[EVENTS_KEY]) ? got[EVENTS_KEY] : [];
+    const stats = got[STATS_KEY] && typeof got[STATS_KEY] === "object" ? got[STATS_KEY] : {};
+
+    if(!stats.byHost || typeof stats.byHost !== "object"){
+      stats.byHost = {};
+    }
+
+    if(!stats.byHost[h]){
+      stats.byHost[h] = {
+        detected: 0,
+        suppressed: 0,
+        last_stamp_utc: null
+      };
+    }
+
+    if(kind === "detected"){
+      stats.detected = Number(stats.detected || 0) + count;
+      stats.byHost[h].detected = Number(stats.byHost[h].detected || 0) + count;
+    }
+
+    if(kind === "suppressed"){
+      stats.suppressed = Number(stats.suppressed || 0) + count;
+      stats.byHost[h].suppressed = Number(stats.byHost[h].suppressed || 0) + count;
+    }
+
+    stats.last_host = h;
+    stats.last_kind = kind;
+    stats.last_stamp_utc = now;
+    stats.byHost[h].last_stamp_utc = now;
+
+    events.unshift({
+      schema: "cookiegate.banner_suppression.event.v1",
+      type: "cookiegate.banner." + kind + ".v1",
+      host: h,
+      count: count,
+      stamp_utc: now
+    });
+
+    await storageSet({
+      [EVENTS_KEY]: events.slice(0, 100),
+      [STATS_KEY]: stats
+    });
+  }
+
+  async function scan(){
+    if(!(await enabled())) return;
+
+    const nodes = candidateNodes().filter(looksLikeBanner);
+
+    if(!nodes.length) return;
+
+    await record("detected", nodes.length);
+
+    let suppressed = 0;
+
+    nodes.forEach(function(el){
+      try {
+        el.setAttribute(SEEN_ATTR, "1");
+        el.style.setProperty("display", "none", "important");
+        el.style.setProperty("visibility", "hidden", "important");
+        el.style.setProperty("pointer-events", "none", "important");
+        suppressed++;
+      } catch(e){}
+    });
+
+    if(suppressed > 0){
+      await record("suppressed", suppressed);
+    }
+  }
+
+  function boot(){
+    setTimeout(scan, 300);
+    setTimeout(scan, 900);
+    setTimeout(scan, 1800);
+    setTimeout(scan, 3500);
+
+    try {
+      const mo = new MutationObserver(function(){
+        clearTimeout(window.__cookieGateBannerLedgerTimerV011);
+        window.__cookieGateBannerLedgerTimerV011 = setTimeout(scan, 250);
+      });
+
+      mo.observe(document.documentElement || document.body, {
+        childList: true,
+        subtree: true
+      });
+    } catch(e){}
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+
+  window.CookieGateBannerLifetimeLedgerV011 = {
+    scan: scan
+  };
+})();

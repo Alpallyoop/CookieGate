@@ -4648,3 +4648,155 @@
     install: install
   };
 })();
+
+// COOKIEGATE_V011_BANNER_LIFETIME_UI_DOMAIN_OPS
+(function(){
+  "use strict";
+
+  const API = typeof browser !== "undefined" ? browser : chrome;
+  const STATS_KEY = "cookiegate.bannerSuppression.stats.v1";
+
+  function norm(x){
+    return String(x || "").replace(/\s+/g, " ").trim();
+  }
+
+  function low(x){
+    return norm(x).toLowerCase();
+  }
+
+  function storageGet(key){
+    return new Promise(function(resolve){
+      try {
+        if(!API || !API.storage || !API.storage.local){
+          resolve({});
+          return;
+        }
+
+        const out = API.storage.local.get(key);
+
+        if(out && typeof out.then === "function"){
+          out.then(function(v){ resolve(v || {}); }).catch(function(){ resolve({}); });
+          return;
+        }
+
+        API.storage.local.get(key, function(v){ resolve(v || {}); });
+      } catch(e){
+        resolve({});
+      }
+    });
+  }
+
+  function hostFromUi(){
+    const body = String(document.body && document.body.textContent ? document.body.textContent : "");
+    const m = body.match(/Site:\s*([^\n\r]+)/i);
+
+    if(!m || !m[1]) return "";
+
+    let h = String(m[1]).trim().toLowerCase();
+    h = h.replace(/^https?:\/\//, "");
+    h = h.split("/")[0].split("?")[0].split("#")[0];
+    h = h.replace(/^www\./, "");
+    return h;
+  }
+
+  function findBannerEvidenceCard(){
+    const nodes = Array.prototype.slice.call(document.querySelectorAll("section, article, div"));
+
+    return nodes.filter(function(node){
+      const t = low(node.textContent);
+      return t.indexOf("banner evidence") >= 0 &&
+        t.indexOf("suppressed") >= 0 &&
+        t.indexOf("detected") >= 0;
+    }).sort(function(a,b){
+      return norm(a.textContent).length - norm(b.textContent).length;
+    })[0] || null;
+  }
+
+  function row(label, value){
+    const r = document.createElement("div");
+    r.className = "cg-banner-lifetime-row-v011";
+
+    const l = document.createElement("span");
+    l.textContent = label;
+
+    const v = document.createElement("b");
+    v.textContent = String(value);
+
+    r.appendChild(l);
+    r.appendChild(v);
+
+    return r;
+  }
+
+  async function renderLifetime(){
+    const card = findBannerEvidenceCard();
+    if(!card) return;
+
+    let box = document.getElementById("cgBannerLifetimeBoxV011");
+
+    if(!box){
+      box = document.createElement("div");
+      box.id = "cgBannerLifetimeBoxV011";
+      box.className = "cg-banner-lifetime-box-v011";
+      card.appendChild(box);
+    }
+
+    const got = await storageGet(STATS_KEY);
+    const stats = got[STATS_KEY] && typeof got[STATS_KEY] === "object" ? got[STATS_KEY] : {};
+    const h = hostFromUi();
+    const hostStats = stats.byHost && stats.byHost[h] ? stats.byHost[h] : {};
+
+    box.textContent = "";
+
+    const title = document.createElement("div");
+    title.className = "cg-banner-lifetime-title-v011";
+    title.textContent = "Lifetime Banner Ledger";
+    box.appendChild(title);
+
+    box.appendChild(row("Lifetime suppressed", Number(stats.suppressed || 0)));
+    box.appendChild(row("Lifetime detected", Number(stats.detected || 0)));
+    box.appendChild(row("This domain suppressed", Number(hostStats.suppressed || 0)));
+    box.appendChild(row("This domain detected", Number(hostStats.detected || 0)));
+
+    const last = document.createElement("div");
+    last.className = "cg-banner-lifetime-last-v011";
+    last.textContent = "Last: " + (stats.last_host || "none") + " / " + (stats.last_stamp_utc || "none");
+    box.appendChild(last);
+  }
+
+  function renameDomainRules(){
+    Array.prototype.slice.call(document.querySelectorAll("button, [role='tab'], h1, h2, h3, div, span")).forEach(function(node){
+      const t = norm(node.textContent);
+
+      if(t === "Domain Rules"){
+        node.textContent = "Domain Ops";
+      }
+
+      if(t === "Domain Registry Governance"){
+        node.textContent = "Domain Ops";
+      }
+    });
+  }
+
+  function boot(){
+    renameDomainRules();
+    renderLifetime();
+
+    setTimeout(function(){ renameDomainRules(); renderLifetime(); }, 300);
+    setTimeout(function(){ renameDomainRules(); renderLifetime(); }, 1000);
+    setTimeout(function(){ renameDomainRules(); renderLifetime(); }, 2200);
+
+    document.addEventListener("click", function(){
+      setTimeout(function(){ renameDomainRules(); renderLifetime(); }, 250);
+      setTimeout(function(){ renameDomainRules(); renderLifetime(); }, 900);
+    }, true);
+  }
+
+  document.addEventListener("DOMContentLoaded", boot);
+  window.addEventListener("load", boot);
+
+  window.CookieGateBannerLifetimeUiDomainOpsV011 = {
+    renderLifetime: renderLifetime,
+    renameDomainRules: renameDomainRules
+  };
+})();

@@ -3711,3 +3711,43 @@ body[data-cg-view="rules"] [data-cg-v7-role="site-package"] {
   color: #93c5fd !important;
   text-align: right !important;
 }
+
+/* COOKIEGATE_V011_BANNER_LIFETIME_UI_DOMAIN_OPS */
+
+.cg-banner-lifetime-box-v011 {
+  margin-top: 10px;
+  padding: 9px;
+  border: 1px solid rgba(52, 211, 153, .18);
+  border-radius: 12px;
+  background: rgba(6, 78, 59, .18);
+}
+
+.cg-banner-lifetime-title-v011 {
+  margin-bottom: 6px;
+  color: #bbf7d0;
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+
+.cg-banner-lifetime-row-v011 {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 0;
+  color: #a9b8d2;
+  font-size: 11px;
+}
+
+.cg-banner-lifetime-row-v011 b {
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+}
+
+.cg-banner-lifetime-last-v011 {
+  margin-top: 6px;
+  color: #86efac;
+  font-size: 10px;
+  line-height: 1.35;
+}
