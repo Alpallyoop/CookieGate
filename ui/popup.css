@@ -3979,3 +3979,15 @@ body[data-cg-view="rules"] [data-cg-v7-role="site-package"] {
   font-weight: 900;
   line-height: 1.35;
 }
+
+/* COOKIEGATE_V011_DOMAIN_OPS_UI_DEDUPE */
+
+[data-cg-domain-ops-old-rule-hidden="true"] {
+  display: none !important;
+}
+
+#cgDomainOpsLockedModeNoticeV011 + #cgDomainOpsLockedModeNoticeV011,
+.cg-domain-ops-locked-mode-notice-v011 + .cg-domain-ops-locked-mode-notice-v011,
+.cg-domain-ops-lock-notice-v011 + .cg-domain-ops-lock-notice-v011 {
+  display: none !important;
+}

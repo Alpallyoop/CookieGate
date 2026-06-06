@@ -6050,3 +6050,172 @@
     applyCurrentLock: applyCurrentLock
   };
 })();
+
+// COOKIEGATE_V011_DOMAIN_OPS_UI_DEDUPE
+(function(){
+  "use strict";
+
+  function norm(x){
+    return String(x || "").replace(/\s+/g, " ").trim();
+  }
+
+  function low(x){
+    return norm(x).toLowerCase();
+  }
+
+  function dedupeLockNotices(){
+    const notices = Array.prototype.slice.call(document.querySelectorAll(
+      "#cgDomainOpsLockedModeNoticeV011, #cgDomainOpsLockNoticeV011, .cg-domain-ops-locked-mode-notice-v011, .cg-domain-ops-lock-notice-v011"
+    ));
+
+    if(notices.length <= 1){
+      return;
+    }
+
+    const keep = notices[0];
+
+    notices.slice(1).forEach(function(n){
+      try { n.remove(); } catch(e){}
+    });
+
+    keep.id = "cgDomainOpsLockedModeNoticeV011";
+    keep.className = "cg-domain-ops-locked-mode-notice-v011";
+  }
+
+  function findDomainOpsPanel(){
+    const nodes = Array.prototype.slice.call(document.querySelectorAll("section, article, main, div"));
+
+    const hits = nodes.filter(function(node){
+      const t = low(node.textContent);
+      return t.indexOf("domain ops") >= 0 &&
+        t.indexOf("save rule") >= 0 &&
+        t.indexOf("export rules") >= 0;
+    });
+
+    hits.sort(function(a,b){
+      return norm(a.textContent).length - norm(b.textContent).length;
+    });
+
+    return hits[0] || null;
+  }
+
+  function isNativeRuleCard(node){
+    if(!node || node.id === "cgDomainOpsRulesCollapseV011") return false;
+    if(node.closest && node.closest("#cgDomainOpsRulesCollapseV011")) return false;
+    if(node.closest && node.closest("#cgDomainRemoteToolsV011")) return false;
+
+    const t = low(node.textContent);
+
+    const looksLikeRule =
+      t.indexOf("active") >= 0 &&
+      t.indexOf("mode:") >= 0 &&
+      (
+        t.indexOf("reachability:") >= 0 ||
+        t.indexOf("cleanup:") >= 0 ||
+        t.indexOf("edit") >= 0
+      ) &&
+      (
+        t.indexOf("remove") >= 0 ||
+        t.indexOf("wipe") >= 0 ||
+        t.indexOf("check") >= 0
+      );
+
+    return looksLikeRule;
+  }
+
+  function hideOldNativeRuleList(){
+    const panel = findDomainOpsPanel();
+    if(!panel) return;
+
+    Array.prototype.slice.call(panel.children).forEach(function(child){
+      if(child.id === "cgDomainOpsRulesCollapseV011") return;
+      if(child.id === "cgDomainRemoteToolsV011") return;
+      if(child.id === "cgDomainOpsPolishStatusV011") return;
+      if(child.classList && child.classList.contains("cg-domain-ops-collapse-v011")) return;
+
+      if(isNativeRuleCard(child)){
+        child.setAttribute("data-cg-domain-ops-old-rule-hidden", "true");
+      }
+    });
+
+    Array.prototype.slice.call(panel.querySelectorAll("div, section, article")).forEach(function(node){
+      if(node.id === "cgDomainOpsRulesCollapseV011") return;
+      if(node.closest && node.closest("#cgDomainOpsRulesCollapseV011")) return;
+      if(node.closest && node.closest("#cgDomainRemoteToolsV011")) return;
+
+      if(isNativeRuleCard(node)){
+        node.setAttribute("data-cg-domain-ops-old-rule-hidden", "true");
+      }
+    });
+  }
+
+  function moveCollapseToTopOfRulesArea(){
+    const panel = findDomainOpsPanel();
+    const box = document.getElementById("cgDomainOpsRulesCollapseV011");
+
+    if(!panel || !box) return;
+
+    const exportBtn = Array.prototype.slice.call(panel.querySelectorAll("button")).find(function(btn){
+      return low(btn.textContent) === "export rules";
+    });
+
+    const helpText = Array.prototype.slice.call(panel.querySelectorAll("div, span, p")).find(function(node){
+      return low(node.textContent).indexOf("add a domain") >= 0 &&
+        low(node.textContent).indexOf("save a rule") >= 0;
+    });
+
+    let anchor = helpText || exportBtn;
+
+    if(anchor && anchor.parentNode){
+      const parent = anchor.parentNode;
+      const insertAfter = anchor;
+      if(insertAfter.nextSibling !== box){
+        parent.insertBefore(box, insertAfter.nextSibling);
+      }
+    } else if(box.parentNode !== panel){
+      panel.appendChild(box);
+    }
+  }
+
+  function forceGreenButtons(){
+    const panel = findDomainOpsPanel();
+    if(!panel) return;
+
+    Array.prototype.slice.call(panel.querySelectorAll("button")).forEach(function(btn){
+      const t = low(btn.textContent);
+
+      if(t === "save rule" || t === "check site" || t === "check"){
+        btn.classList.add("cg-domain-ops-primary-green-v011");
+      }
+    });
+  }
+
+  function run(){
+    dedupeLockNotices();
+    hideOldNativeRuleList();
+    moveCollapseToTopOfRulesArea();
+    forceGreenButtons();
+  }
+
+  function boot(){
+    setTimeout(run, 100);
+    setTimeout(run, 500);
+    setTimeout(run, 1200);
+    setTimeout(run, 2500);
+
+    document.addEventListener("click", function(){
+      setTimeout(run, 100);
+      setTimeout(run, 500);
+      setTimeout(run, 1200);
+    }, true);
+  }
+
+  document.addEventListener("DOMContentLoaded", boot);
+  window.addEventListener("load", boot);
+
+  window.CookieGateDomainOpsUiDedupeV011 = {
+    run: run,
+    dedupeLockNotices: dedupeLockNotices,
+    hideOldNativeRuleList: hideOldNativeRuleList
+  };
+})();
