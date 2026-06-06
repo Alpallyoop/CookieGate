@@ -5358,12 +5358,12 @@
       }
     });
 
-    let note = document.getElementById("cgDomainOpsLockNoticeV011");
+    let note = document.getElementById("cgDomainOpsLockedModeNoticeV011");
 
     if(!note){
       note = document.createElement("div");
-      note.id = "cgDomainOpsLockNoticeV011";
-      note.className = "cg-domain-ops-lock-notice-v011";
+      note.id = "cgDomainOpsLockedModeNoticeV011";
+      note.className = "cg-domain-ops-locked-mode-notice-v011";
       panel.insertBefore(note, panel.firstChild);
     }
 
@@ -6065,7 +6065,7 @@
 
   function dedupeLockNotices(){
     const notices = Array.prototype.slice.call(document.querySelectorAll(
-      "#cgDomainOpsLockedModeNoticeV011, #cgDomainOpsLockNoticeV011, .cg-domain-ops-locked-mode-notice-v011, .cg-domain-ops-lock-notice-v011"
+      "#cgDomainOpsLockedModeNoticeV011, #cgDomainOpsLockedModeNoticeV011, .cg-domain-ops-locked-mode-notice-v011, .cg-domain-ops-locked-mode-notice-v011"
     ));
 
     if(notices.length <= 1){
@@ -6217,5 +6217,80 @@
     run: run,
     dedupeLockNotices: dedupeLockNotices,
     hideOldNativeRuleList: hideOldNativeRuleList
+  };
+})();
+
+// COOKIEGATE_V011_DOMAIN_OPS_LOCK_NOTICE_SINGLETON
+(function(){
+  "use strict";
+
+  const LOCK_ID = "cgDomainOpsLockedModeNoticeV011";
+  const LOCK_CLASS = "cg-domain-ops-locked-mode-notice-v011";
+
+  function norm(x){
+    return String(x || "").replace(/\s+/g, " ").trim();
+  }
+
+  function isLockNotice(node){
+    if(!node || node.nodeType !== 1) return false;
+
+    const id = String(node.id || "");
+    const cls = String(node.className || "");
+    const text = norm(node.textContent);
+
+    return id === LOCK_ID ||
+      id === "cgDomainOpsLockNoticeV011" ||
+      cls.indexOf("cg-domain-ops-lock-notice-v011") >= 0 ||
+      cls.indexOf(LOCK_CLASS) >= 0 ||
+      text.indexOf("Currently running in") === 0 && text.indexOf("locked by Domain Ops rule") >= 0;
+  }
+
+  function canonicalize(){
+    const notices = Array.prototype.slice.call(document.querySelectorAll(
+      "#" + LOCK_ID +
+      ", #cgDomainOpsLockNoticeV011" +
+      ", .cg-domain-ops-locked-mode-notice-v011" +
+      ", .cg-domain-ops-lock-notice-v011"
+    )).filter(isLockNotice);
+
+    if(!notices.length) return;
+
+    const keep = notices[0];
+    keep.id = LOCK_ID;
+    keep.className = LOCK_CLASS;
+
+    notices.slice(1).forEach(function(n){
+      try { n.remove(); } catch(e){}
+    });
+  }
+
+  function boot(){
+    canonicalize();
+
+    setTimeout(canonicalize, 50);
+    setTimeout(canonicalize, 150);
+    setTimeout(canonicalize, 400);
+    setTimeout(canonicalize, 900);
+
+    try {
+      const mo = new MutationObserver(function(){
+        clearTimeout(window.__cookieGateDomainOpsLockSingletonTimerV011);
+        window.__cookieGateDomainOpsLockSingletonTimerV011 = setTimeout(canonicalize, 0);
+      });
+
+      mo.observe(document.body || document.documentElement, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ["id", "class"]
+      });
+    } catch(e){}
+  }
+
+  document.addEventListener("DOMContentLoaded", boot);
+  window.addEventListener("load", boot);
+
+  window.CookieGateDomainOpsLockNoticeSingletonV011 = {
+    canonicalize: canonicalize
   };
 })();
