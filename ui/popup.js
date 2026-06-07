@@ -464,7 +464,13 @@
   }
 
   function renderHeader(){
-    byId("statusPill").innerHTML = "<span></span> READY - " + state.cookies.length + " cookies";
+    var status = byId("statusPill");
+
+    if(status){
+      var dot = document.createElement("span");
+      status.replaceChildren(dot, document.createTextNode(" READY - " + state.cookies.length + " cookies"));
+    }
+
     byId("siteLine").textContent = "Site: " + safe(state.site);
     byId("urlLine").textContent = state.url || "";
     byId("globalStat").textContent = formatModeLabel(state.globalMode);
@@ -476,40 +482,87 @@
     byId("siteModeSelect").value = state.siteMode || "inherit-global";
   }
 
+  function makeDiv(cls, text){
+    var el = document.createElement("div");
+    if(cls) el.className = cls;
+    if(text !== undefined && text !== null) el.textContent = String(text);
+    return el;
+  }
+
+  function makeSpan(cls, text, title){
+    var el = document.createElement("span");
+    if(cls) el.className = cls;
+    if(title) el.title = title;
+    if(text !== undefined && text !== null) el.textContent = String(text);
+    return el;
+  }
+
+  function makeKvNode(label, value){
+    var row = document.createElement("div");
+    row.className = "cg-kv";
+
+    var k = document.createElement("span");
+    k.textContent = String(label || "");
+
+    var v = document.createElement("b");
+    v.textContent = safe(value);
+
+    row.appendChild(k);
+    row.appendChild(v);
+
+    return row;
+  }
+
   function renderCookies(){
     byId("cookieCountLabel").textContent = "(" + state.cookies.length + ")";
 
     var root = byId("cookiesList");
 
     if(!state.cookies.length){
-      root.innerHTML = '<div class="cg-empty">' + (state.site && state.site !== "-" ? "No cookies found for this site." : "No inspection run yet.") + '</div>';
+      root.replaceChildren(
+        makeDiv(
+          "cg-empty",
+          state.site && state.site !== "-" ? "No cookies found for this site." : "No inspection run yet."
+        )
+      );
       return;
     }
 
-    root.innerHTML = state.cookies.slice(0,20).map(function(c){
+    var nodes = state.cookies.slice(0,20).map(function(c){
       var cls = safe(c.classification || classifyCookie(c));
       var pol = safe(c.policyAction || policyForCookie(c));
 
-      return '<article class="cg-cookie">' +
-        '<div class="cg-cookie-head">' +
-          '<div class="cg-cookie-name">' + safe(c.name) + '</div>' +
-          '<div class="cg-tags">' +
-            '<span class="cg-tag ' + tagClass(cls) + '" title="Classification: ' + cls + '">' + cls + '</span>' + 
-            '<span class="cg-tag ' + tagClass(pol) + '" title="Policy action: ' + pol + '">' + pol + '</span>' + 
-          '</div>' +
-        '</div>' +
-        '<div class="cg-cookie-grid">' +
-          kv("Domain", c.domain) +
-          kv("Path", c.path) +
-          kv("Session", c.session ? "Yes" : "No") +
-          kv("Secure", c.secure ? "Yes" : "No") +
-          kv("HttpOnly", c.httpOnly ? "Yes" : "No") +
-          kv("SameSite", c.sameSite) +
-          kv("Keep Always", c.keepAlways ? "Yes" : "No") +
-          kv("Value Hash", c.valueHashPreview) +
-        '</div>' +
-      '</article>';
-    }).join("");
+      var article = document.createElement("article");
+      article.className = "cg-cookie";
+
+      var head = makeDiv("cg-cookie-head");
+
+      var name = makeDiv("cg-cookie-name", safe(c.name));
+
+      var tags = makeDiv("cg-tags");
+      tags.appendChild(makeSpan("cg-tag " + tagClass(cls), cls, "Classification: " + cls));
+      tags.appendChild(makeSpan("cg-tag " + tagClass(pol), pol, "Policy action: " + pol));
+
+      head.appendChild(name);
+      head.appendChild(tags);
+
+      var grid = makeDiv("cg-cookie-grid");
+      grid.appendChild(makeKvNode("Domain", c.domain));
+      grid.appendChild(makeKvNode("Path", c.path));
+      grid.appendChild(makeKvNode("Session", c.session ? "Yes" : "No"));
+      grid.appendChild(makeKvNode("Secure", c.secure ? "Yes" : "No"));
+      grid.appendChild(makeKvNode("HttpOnly", c.httpOnly ? "Yes" : "No"));
+      grid.appendChild(makeKvNode("SameSite", c.sameSite));
+      grid.appendChild(makeKvNode("Keep Always", c.keepAlways ? "Yes" : "No"));
+      grid.appendChild(makeKvNode("Value Hash", c.valueHashPreview));
+
+      article.appendChild(head);
+      article.appendChild(grid);
+
+      return article;
+    });
+
+    root.replaceChildren.apply(root, nodes);
   }
 
   function normalizedEvidence(){
