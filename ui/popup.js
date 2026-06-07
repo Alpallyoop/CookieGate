@@ -437,9 +437,33 @@
       var grid = document.createElement("div");
       grid.id = "modeHelpGrid";
       grid.className = "cg-mode-help-grid";
-      grid.innerHTML =
-        '<div class="cg-mode-help"><b>Global:</b> <span id="globalModeHelp"></span></div>' +
-        '<div class="cg-mode-help"><b>Site:</b> <span id="siteModeHelp"></span></div>';
+      var globalHelp = document.createElement("div");
+      globalHelp.className = "cg-mode-help";
+
+      var globalBold = document.createElement("b");
+      globalBold.textContent = "Global:";
+
+      var globalSpan = document.createElement("span");
+      globalSpan.id = "globalModeHelp";
+
+      globalHelp.appendChild(globalBold);
+      globalHelp.appendChild(cgTextNode(" "));
+      globalHelp.appendChild(globalSpan);
+
+      var siteHelp = document.createElement("div");
+      siteHelp.className = "cg-mode-help";
+
+      var siteBold = document.createElement("b");
+      siteBold.textContent = "Site:";
+
+      var siteSpan = document.createElement("span");
+      siteSpan.id = "siteModeHelp";
+
+      siteHelp.appendChild(siteBold);
+      siteHelp.appendChild(cgTextNode(" "));
+      siteHelp.appendChild(siteSpan);
+
+      grid.replaceChildren(globalHelp, siteHelp);
       modeCard.appendChild(grid);
     }
 
@@ -497,6 +521,31 @@
     return el;
   }
 
+  function cgTextNode(text){
+    return document.createTextNode(String(text === undefined || text === null ? "" : text));
+  }
+
+  function cgElNode(tag, cls, text){
+    var el = document.createElement(tag);
+    if(cls) el.className = cls;
+    if(text !== undefined && text !== null) el.textContent = String(text);
+    return el;
+  }
+
+  function cgLabelInputNode(cls, id, type, text, checked){
+    var label = document.createElement("label");
+    label.className = cls || "";
+
+    var input = document.createElement("input");
+    input.id = id;
+    input.type = type || "checkbox";
+    input.checked = !!checked;
+
+    label.appendChild(input);
+    label.appendChild(cgTextNode(text));
+
+    return label;
+  }
   function makeKvNode(label, value){
     var row = document.createElement("div");
     row.className = "cg-kv";
@@ -938,6 +987,49 @@
     return null;
   }
 
+  function cgMakeTransparencyCard(id, title, bodyId, noteText, withObserverButtons){
+    const card = document.createElement("div");
+    card.className = "cg-transparency-card";
+    card.id = id;
+
+    const h = document.createElement("h3");
+    h.textContent = title;
+    card.appendChild(h);
+
+    const body = document.createElement("div");
+    body.id = bodyId;
+
+    if(noteText){
+      const note = document.createElement("div");
+      note.className = "cg-transparency-note";
+      note.textContent = noteText;
+      body.appendChild(note);
+    }
+
+    card.appendChild(body);
+
+    if(withObserverButtons){
+      const actions = document.createElement("div");
+      actions.className = "cg-observer-actions";
+
+      const scan = document.createElement("button");
+      scan.id = "cgObserverScanBtn";
+      scan.type = "button";
+      scan.textContent = "Scan browser";
+
+      const exp = document.createElement("button");
+      exp.id = "cgObserverExportBtn";
+      exp.type = "button";
+      exp.textContent = "Export observer";
+
+      actions.appendChild(scan);
+      actions.appendChild(exp);
+      card.appendChild(actions);
+    }
+
+    return card;
+  }
+
   function cgEnsureTransparencyPanels(){
     if(cgById("cgTransparencyGrid")) return;
 
@@ -946,25 +1038,17 @@
     host.id = "cgTransparencyGrid";
     host.className = "cg-transparency-grid";
 
-    host.innerHTML =
-      '<div class="cg-transparency-card" id="cgSavedModeCard">' +
-        '<h3>Saved mode</h3>' +
-        '<div id="cgSavedModeBody"></div>' +
-      '</div>' +
-      '<div class="cg-transparency-card" id="cgWipePlanCard">' +
-        '<h3>Wipe plan</h3>' +
-        '<div id="cgWipePlanBody"></div>' +
-      '</div>' +
-      '<div class="cg-transparency-card" id="cgBrowserObserverCard">' +
-        '<h3>Browser Observer</h3>' +
-        '<div id="cgBrowserObserverBody">' +
-          '<div class="cg-transparency-note">Scan browser-held cookies across domains without needing a domain page active.</div>' +
-        '</div>' +
-        '<div class="cg-observer-actions">' +
-          '<button id="cgObserverScanBtn" type="button">Scan browser</button>' +
-          '<button id="cgObserverExportBtn" type="button">Export observer</button>' +
-        '</div>' +
-      '</div>';
+    host.replaceChildren(
+      cgMakeTransparencyCard("cgSavedModeCard", "Saved mode", "cgSavedModeBody", "", false),
+      cgMakeTransparencyCard("cgWipePlanCard", "Wipe plan", "cgWipePlanBody", "", false),
+      cgMakeTransparencyCard(
+        "cgBrowserObserverCard",
+        "Browser Observer",
+        "cgBrowserObserverBody",
+        "Scan browser-held cookies across domains without needing a domain page active.",
+        true
+      )
+    );
 
     if(live && live.parentNode){
       live.parentNode.insertBefore(host, live.nextSibling);
@@ -975,16 +1059,18 @@
     const scan = cgById("cgObserverScanBtn");
     const exp = cgById("cgObserverExportBtn");
 
-    if(scan){
+    if(scan && scan.getAttribute("data-cg-bound") !== "1"){
+      scan.setAttribute("data-cg-bound", "1");
       scan.addEventListener("click", function(){
-        cgCaptureBrowserObserver(true);
+        if(window.CookieGateCaptureBrowserObserver){
+          window.CookieGateCaptureBrowserObserver(true);
+        }
       });
     }
 
-    if(exp){
-      exp.addEventListener("click", function(){
-        cgExportBrowserObserverPackage();
-      });
+    if(exp && exp.getAttribute("data-cg-bound") !== "1"){
+      exp.setAttribute("data-cg-bound", "1");
+      exp.addEventListener("click", cgExportBrowserObserverPackage);
     }
   }
 
@@ -1196,96 +1282,15 @@
 
     const data = window.CookieGateBrowserObserverLast;
 
-    if(!data){
-      body.innerHTML =
-        '<div class="cg-transparency-note">Scan browser-held cookies across domains without needing a domain page active.</div>';
+    if(!data || !data.analysis){
+      const note = document.createElement("div");
+      note.className = "cg-transparency-note";
+      note.textContent = "Scan browser-held cookies across domains without needing a domain page active.";
+      body.replaceChildren(note);
       return;
     }
 
-    const a = data.analysis;
-
-    function esc(x){
-      return String(x == null ? "" : x)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-    }
-
-    function pct(n,total){
-      if(!total || total <= 0) return "0.0%";
-      return ((Number(n || 0) / Number(total)) * 100).toFixed(1) + "%";
-    }
-
-    function seg(value,total,offset,color){
-      const r = 35;
-      const c = 2 * Math.PI * r;
-      const safeTotal = Math.max(1, Number(total || 0));
-      const safeValue = Math.max(0, Number(value || 0));
-
-      if(safeValue <= 0){
-        return "";
-      }
-
-      const dash = (safeValue / safeTotal) * c;
-      const gap = Math.max(0, c - dash);
-      const off = -1 * ((offset / safeTotal) * c);
-
-      return '<circle class="cg-native-donut-seg-v1" cx="50" cy="50" r="' + r + '" stroke="' + color + '" stroke-dasharray="' + dash.toFixed(3) + ' ' + gap.toFixed(3) + '" stroke-dashoffset="' + off.toFixed(3) + '"></circle>';
-    }
-
-    const total = Number(a.totalCookies || 0);
-
-    const rows = [
-      { label: "Auth/session", count: Number(a.auth || 0), color: "#7da7ff" },
-      { label: "Preferences", count: Number(a.preferences || 0), color: "#a78bfa" },
-      { label: "Tracking", count: Number(a.tracking || 0), color: "#fbbf24" },
-      { label: "Unknown", count: Number(a.unknown || 0), color: "#fb5b66" }
-    ];
-
-    let offset = 0;
-    const segments = rows.map(function(row){
-      const out = seg(row.count,total,offset,row.color);
-      offset += row.count;
-      return out;
-    }).join("");
-
-    const chart =
-      '<div class="cg-native-observer-chart-v1">' +
-        '<svg class="cg-native-donut-v1" viewBox="0 0 100 100" aria-label="Cookie category breakdown">' +
-          '<circle class="cg-native-donut-bg-v1" cx="50" cy="50" r="35"></circle>' +
-          segments +
-          '<text class="cg-native-donut-count-v1" x="50" y="46">' + esc(total) + '</text>' +
-          '<text class="cg-native-donut-sub-v1" x="50" y="61">total</text>' +
-        '</svg>' +
-        '<div class="cg-native-legend-v1">' +
-          rows.map(function(row){
-            return '<div class="cg-native-legend-row-v1">' +
-              '<span class="cg-native-dot-v1" style="background:' + row.color + '"></span>' +
-              '<span class="cg-native-label-v1">' + esc(row.label) + '</span>' +
-              '<span class="cg-native-count-v1">' + esc(row.count) + '</span>' +
-              '<span class="cg-native-pct-v1">(' + esc(pct(row.count,total)) + ')</span>' +
-            '</div>';
-          }).join("") +
-        '</div>' +
-      '</div>';
-
-    const domains = a.topDomains.map(function(d){
-      const max = Math.max(1, a.topDomains[0] ? a.topDomains[0].count : d.count);
-      const width = Math.max(4, Math.round((d.count / max) * 100));
-
-      return '<div class="cg-observer-domain cg-native-domain-v1">' +
-        '<div class="cg-native-domain-top-v1"><span title="' + esc(d.domain) + '">' + esc(d.domain) + '</span><b>' + esc(d.count) + '</b></div>' +
-        '<div class="cg-native-domain-track-v1"><div class="cg-native-domain-fill-v1" style="width:' + width + '%"></div></div>' +
-      '</div>';
-    }).join("");
-
-    body.innerHTML =
-      '<div class="cg-observer-row"><span>Total cookies</span><b>' + esc(a.totalCookies) + '</b></div>' +
-      '<div class="cg-observer-row"><span>Domains</span><b>' + esc(a.totalDomains) + '</b></div>' +
-      '<div class="cg-observer-row"><span>Review/tracking</span><b>' + esc(a.reviewTracking || a.important || 0) + '</b></div>' +
-      chart +
-      '<div class="cg-observer-domains">' + domains + '</div>';
+    renderBrowserObserver(data.analysis);
   }
 
   function cgExportBrowserObserverPackage(){
@@ -1500,10 +1505,25 @@
     const nav = document.createElement("nav");
     nav.id = "cgViewNav";
     nav.className = "cg-view-nav";
-    nav.innerHTML =
-      '<button class="cg-view-tab active" id="cgTabActive" type="button">Active Site</button>' +
-      '<button class="cg-view-tab" id="cgTabObserver" type="button">Browser Observer</button>' +
-      '<button class="cg-view-tab" id="cgTabRules" type="button">Domain Rules</button>';
+    const activeTab = document.createElement("button");
+    activeTab.className = "cg-view-tab active";
+    activeTab.id = "cgTabActive";
+    activeTab.type = "button";
+    activeTab.textContent = "Active Site";
+
+    const observerTab = document.createElement("button");
+    observerTab.className = "cg-view-tab";
+    observerTab.id = "cgTabObserver";
+    observerTab.type = "button";
+    observerTab.textContent = "Browser Observer";
+
+    const rulesTab = document.createElement("button");
+    rulesTab.className = "cg-view-tab";
+    rulesTab.id = "cgTabRules";
+    rulesTab.type = "button";
+    rulesTab.textContent = "Domain Ops";
+
+    nav.replaceChildren(activeTab, observerTab, rulesTab);
 
     if(header && header.parentNode){
       header.parentNode.insertBefore(nav, header.nextSibling);
@@ -1976,7 +1996,10 @@
     const statusPill = document.getElementById("statusPill");
 
     if(siteLine) siteLine.textContent = "Site: Browser Observer";
-    if(statusPill) statusPill.innerHTML = "<span></span> BROWSER OBSERVER";
+    if(statusPill){
+      const dot = document.createElement("span");
+      statusPill.replaceChildren(dot, document.createTextNode(" BROWSER OBSERVER"));
+    }
 
     if(window.CookieGateCaptureBrowserObserver && !window.CookieGateBrowserObserverLast){
       window.CookieGateCaptureBrowserObserver(true);
@@ -2443,223 +2466,30 @@
     const data = window.CookieGateBrowserObserverLast;
 
     if(!data || !data.analysis){
-      body.innerHTML =
-        '<div class="cg-transparency-note">Scan browser-held cookies across domains without needing a domain page active.</div>' +
-        '<div class="cg-observer-privacy-note good"><b>Privacy:</b> exports use hash previews, not raw cookie values.</div>';
+      const note = document.createElement("div");
+      note.className = "cg-transparency-note";
+      note.textContent = "Scan browser-held cookies across domains without needing a domain page active.";
+
+      const privacy = document.createElement("div");
+      privacy.className = "cg-observer-privacy-note good";
+
+      const b = document.createElement("b");
+      b.textContent = "Privacy:";
+
+      privacy.appendChild(b);
+      privacy.appendChild(document.createTextNode(" exports use hash previews, not raw cookie values."));
+
+      body.replaceChildren(note, privacy);
       return;
     }
 
     const a = data.analysis;
-    const cls = a.byClass || {};
-    const total = a.totalCookies || 0;
-    const known = (cls.authSession || 0) + (cls.preferences || 0) + (cls.tracking || 0);
-    const knownPct = total > 0 ? Math.round((known / total) * 100) : 0;
-    const max = a.topDomains && a.topDomains.length ? Math.max.apply(null, a.topDomains.map(function(d){ return d.count || 0; })) : 1;
-
-    const bars = (a.topDomains || []).map(function(d){
-      const pct = max > 0 ? Math.max(4, Math.round(((d.count || 0) / max) * 100)) : 0;
-
-      return '' +
-        '<div class="cg-observer-bar-row">' +
-          '<div>' +
-            '<div class="cg-observer-bar-label" title="' + d.domain + '">' + d.domain + '</div>' +
-            '<div class="cg-observer-bar-track"><div class="cg-observer-bar-fill" style="--pct:' + pct + '%"></div></div>' +
-          '</div>' +
-          '<div class="cg-observer-bar-count">' + d.count + '</div>' +
-        '</div>';
-    }).join("");
-
-    // COOKIEGATE_V011_NATIVE_OBSERVER_DONUT_PATCH
-    function pctV011(value,totalValue){
-      const t = Math.max(1, Number(totalValue || 0));
-      return Math.round((Number(value || 0) / t) * 100);
-    }
-
-    function segV011(value,totalValue,offset,color){
-      const r = 35;
-      const c = 2 * Math.PI * r;
-      const safeTotal = Math.max(1, Number(totalValue || 0));
-      const safeValue = Math.max(0, Number(value || 0));
-
-      if(safeValue <= 0){
-        return "";
-      }
-
-      const dash = (safeValue / safeTotal) * c;
-      const gap = Math.max(0, c - dash);
-      const off = -1 * ((offset / safeTotal) * c);
-
-      return '<circle class="cg-observer-svg-seg-v011" cx="50" cy="50" r="' + r + '" stroke="' + color + '" stroke-dasharray="' + dash.toFixed(3) + ' ' + gap.toFixed(3) + '" stroke-dashoffset="' + off.toFixed(3) + '"></circle>';
-    }
-
-    const donutRowsV011 = [
-      { label: "Auth/session", count: Number(cls.authSession || 0), color: "#34d399", key: "auth" },
-      { label: "Preferences", count: Number(cls.preferences || 0), color: "#fbbf24", key: "prefs" },
-      { label: "Tracking", count: Number(cls.tracking || 0), color: "#60a5fa", key: "tracking" },
-      { label: "Unknown", count: Number(cls.unknown || 0), color: "#fb7185", key: "unknown" }
-    ];
-
-    let donutOffsetV011 = 0;
-    const donutSegmentsV011 = donutRowsV011.map(function(row){
-      const out = segV011(row.count,total,donutOffsetV011,row.color);
-      donutOffsetV011 += row.count;
-      return out;
-    }).join("");
-
-    const donutLegendV011 = donutRowsV011.map(function(row){
-      return '<div class="cg-observer-svg-legend-row-v011">' +
-        '<span class="cg-observer-svg-dot-v011" style="background:' + row.color + '"></span>' +
-        '<span class="cg-observer-svg-label-v011">' + row.label + '</span>' +
-        '<b>' + row.count + '</b>' +
-        '<span>' + pctV011(row.count,total) + '%</span>' +
-      '</div>';
-    }).join("");
-
-    const reviewPctV011 = pctV011((a.reviewOrTracking || 0), total);
-
-    const observerNodesV011 = [];
-
-    function observerRowV011(label, value){
-      const row = document.createElement("div");
-      row.className = "cg-observer-row";
-
-      const span = document.createElement("span");
-      span.textContent = String(label || "");
-
-      const b = document.createElement("b");
-      b.textContent = String(value === undefined || value === null ? "" : value);
-
-      row.appendChild(span);
-      row.appendChild(b);
-      return row;
-    }
-
-    observerNodesV011.push(observerRowV011("Total cookies", total));
-    observerNodesV011.push(observerRowV011("Domains", a.totalDomains || 0));
-    observerNodesV011.push(observerRowV011("Review/tracking", a.reviewOrTracking || 0));
-
-    const vizV011 = document.createElement("div");
-    vizV011.className = "cg-observer-viz cg-observer-svg-v011";
-
-    const wrapV011 = document.createElement("div");
-    wrapV011.className = "cg-observer-svg-wrap-v011";
-
-    const nsV011 = "http://www.w3.org/2000/svg";
-    const svgV011 = document.createElementNS(nsV011, "svg");
-    svgV011.setAttribute("class", "cg-observer-svg-donut-v011");
-    svgV011.setAttribute("viewBox", "0 0 100 100");
-    svgV011.setAttribute("aria-label", "Cookie category breakdown");
-
-    const bgV011 = document.createElementNS(nsV011, "circle");
-    bgV011.setAttribute("class", "cg-observer-svg-bg-v011");
-    bgV011.setAttribute("cx", "50");
-    bgV011.setAttribute("cy", "50");
-    bgV011.setAttribute("r", "35");
-    svgV011.appendChild(bgV011);
-
-    let offsetPctV011 = 0;
-
-    donutRowsV011.forEach(function(row){
-      const count = Number(row.count || 0);
-      const pctNum = total > 0 ? Math.max(0, (count / total) * 100) : 0;
-
-      if(pctNum > 0){
-        const seg = document.createElementNS(nsV011, "circle");
-        seg.setAttribute("class", "cg-observer-svg-segment-v011");
-        seg.setAttribute("cx", "50");
-        seg.setAttribute("cy", "50");
-        seg.setAttribute("r", "35");
-        seg.setAttribute("pathLength", "100");
-        seg.setAttribute("stroke", String(row.color || "currentColor"));
-        seg.setAttribute("stroke-dasharray", String(pctNum) + " " + String(Math.max(0, 100 - pctNum)));
-        seg.setAttribute("stroke-dashoffset", String(-offsetPctV011));
-        seg.setAttribute("transform", "rotate(-90 50 50)");
-        svgV011.appendChild(seg);
-      }
-
-      offsetPctV011 += pctNum;
+    renderBrowserObserver({
+      totalCookies: a.totalCookies || 0,
+      totalDomains: a.totalDomains || 0,
+      reviewTracking: a.reviewOrTracking || a.important || 0,
+      topDomains: a.topDomains || []
     });
-
-    const mainTextV011 = document.createElementNS(nsV011, "text");
-    mainTextV011.setAttribute("class", "cg-observer-svg-main-v011");
-    mainTextV011.setAttribute("x", "50");
-    mainTextV011.setAttribute("y", "46");
-    mainTextV011.textContent = String(reviewPctV011) + "%";
-    svgV011.appendChild(mainTextV011);
-
-    const subTextV011 = document.createElementNS(nsV011, "text");
-    subTextV011.setAttribute("class", "cg-observer-svg-sub-v011");
-    subTextV011.setAttribute("x", "50");
-    subTextV011.setAttribute("y", "61");
-    subTextV011.textContent = "review";
-    svgV011.appendChild(subTextV011);
-
-    wrapV011.appendChild(svgV011);
-
-    const legendV011 = document.createElement("div");
-    legendV011.className = "cg-observer-svg-legend-v011";
-
-    donutRowsV011.forEach(function(row){
-      const item = document.createElement("div");
-      item.className = "cg-observer-svg-legend-row-v011";
-
-      const dot = document.createElement("span");
-      dot.className = "cg-observer-svg-dot-v011";
-      dot.style.background = String(row.color || "");
-
-      const label = document.createElement("span");
-      label.className = "cg-observer-svg-label-v011";
-      label.textContent = String(row.label || "");
-
-      const count = document.createElement("b");
-      count.textContent = String(row.count || 0);
-
-      const pctEl = document.createElement("span");
-      pctEl.textContent = String(pctV011(row.count,total)) + "%";
-
-      item.appendChild(dot);
-      item.appendChild(label);
-      item.appendChild(count);
-      item.appendChild(pctEl);
-
-      legendV011.appendChild(item);
-    });
-
-    vizV011.appendChild(wrapV011);
-    vizV011.appendChild(legendV011);
-
-    const barsBoxV011 = document.createElement("div");
-    barsBoxV011.className = "cg-observer-bars";
-
-    donutRowsV011.forEach(function(row){
-      const bar = document.createElement("div");
-      bar.className = "cg-observer-bar";
-
-      const label = document.createElement("span");
-      label.textContent = String(row.label || "");
-
-      const value = document.createElement("b");
-      value.textContent = String(row.count || 0);
-
-      bar.appendChild(label);
-      bar.appendChild(value);
-      barsBoxV011.appendChild(bar);
-    });
-
-    const privacyV011 = document.createElement("div");
-    privacyV011.className = "cg-observer-privacy-note good";
-
-    const privacyBoldV011 = document.createElement("b");
-    privacyBoldV011.textContent = "Privacy:";
-
-    privacyV011.appendChild(privacyBoldV011);
-    privacyV011.appendChild(document.createTextNode(" raw cookie values are not exported."));
-
-    observerNodesV011.push(vizV011);
-    observerNodesV011.push(barsBoxV011);
-    observerNodesV011.push(privacyV011);
-
-    body.replaceChildren.apply(body, observerNodesV011);
   }
 
   async function captureObserverV3(render){
@@ -2925,6 +2755,10 @@
     });
   }
 
+  function cgCleanupLabel(id, text, checked){
+    return cgLabelInputNode("cg-browser-cleanup-check", id, "checkbox", text, checked);
+  }
+
   function ensureCleanupCardV4(){
     if(byIdV4("cgBrowserCleanupCard")) return;
 
@@ -2934,23 +2768,49 @@
     const card = document.createElement("div");
     card.id = "cgBrowserCleanupCard";
     card.className = "cg-browser-cleanup-card";
-    card.innerHTML =
-      '<h3>Browser Cleanup Plan</h3>' +
-      '<div class="cg-browser-cleanup-grid">' +
-        '<label class="cg-browser-cleanup-check"><input id="cgCleanTracking" type="checkbox" checked>Tracking cookies</label>' +
-        '<label class="cg-browser-cleanup-check"><input id="cgCleanUnknown" type="checkbox" checked>Unknown/review cookies</label>' +
-        '<label class="cg-browser-cleanup-check"><input id="cgCleanPreferences" type="checkbox">Preferences</label>' +
-        '<label class="cg-browser-cleanup-check"><input id="cgPreserveAuth" type="checkbox" checked>Preserve auth/session</label>' +
-        '<label class="cg-browser-cleanup-check"><input id="cgCleanCache" type="checkbox">Cache</label>' +
-        '<label class="cg-browser-cleanup-check"><input id="cgCleanStorage" type="checkbox">Local storage / IndexedDB</label>' +
-        '<label class="cg-browser-cleanup-check"><input id="cgCleanServiceWorkers" type="checkbox">Service workers</label>' +
-      '</div>' +
-      '<div id="cgBrowserCleanupPlan" class="cg-browser-cleanup-plan"></div>' +
-      '<div class="cg-browser-cleanup-actions">' +
-        '<button id="cgPlanBrowserCleanupBtn" type="button">Plan cleanup</button>' +
-        '<button id="cgRunBrowserCleanupBtn" class="danger" type="button">Clean browser</button>' +
-      '</div>' +
-      '<div id="cgBrowserCleanupResult" class="cg-browser-cleanup-note">Choose categories, then plan cleanup.</div>';
+
+    const h = document.createElement("h3");
+    h.textContent = "Browser Cleanup Plan";
+
+    const grid = document.createElement("div");
+    grid.className = "cg-browser-cleanup-grid";
+    grid.replaceChildren(
+      cgCleanupLabel("cgCleanTracking", "Tracking cookies", true),
+      cgCleanupLabel("cgCleanUnknown", "Unknown/review cookies", true),
+      cgCleanupLabel("cgCleanPreferences", "Preferences", false),
+      cgCleanupLabel("cgPreserveAuth", "Preserve auth/session", true),
+      cgCleanupLabel("cgCleanCache", "Cache", false),
+      cgCleanupLabel("cgCleanStorage", "Local storage / IndexedDB", false),
+      cgCleanupLabel("cgCleanServiceWorkers", "Service workers", false)
+    );
+
+    const plan = document.createElement("div");
+    plan.id = "cgBrowserCleanupPlan";
+    plan.className = "cg-browser-cleanup-plan";
+
+    const actions = document.createElement("div");
+    actions.className = "cg-browser-cleanup-actions";
+
+    const planBtn = document.createElement("button");
+    planBtn.id = "cgPlanBrowserCleanupBtn";
+    planBtn.type = "button";
+    planBtn.textContent = "Plan cleanup";
+
+    const runBtn = document.createElement("button");
+    runBtn.id = "cgRunBrowserCleanupBtn";
+    runBtn.className = "danger";
+    runBtn.type = "button";
+    runBtn.textContent = "Clean browser";
+
+    actions.appendChild(planBtn);
+    actions.appendChild(runBtn);
+
+    const result = document.createElement("div");
+    result.id = "cgBrowserCleanupResult";
+    result.className = "cg-browser-cleanup-note";
+    result.textContent = "Choose categories, then plan cleanup.";
+
+    card.replaceChildren(h, grid, plan, actions, result);
 
     observer.appendChild(card);
 
@@ -3800,7 +3660,16 @@
       el = document.createElement("div");
       el.id = "cgActiveUnavailableToast";
       el.className = "cg-toast";
-      el.innerHTML = "<b>Active Site unavailable.</b><br>Open a website tab to inspect site cookies.";
+      const strong = document.createElement("b");
+      strong.textContent = "Active Site unavailable.";
+
+      const br = document.createElement("br");
+
+      el.replaceChildren(
+        strong,
+        br,
+        document.createTextNode("Open a website tab to inspect site cookies.")
+      );
       document.body.appendChild(el);
     }
 
