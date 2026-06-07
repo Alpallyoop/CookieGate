@@ -2517,23 +2517,149 @@
 
     const reviewPctV011 = pctV011((a.reviewOrTracking || 0), total);
 
-    body.innerHTML =
-      '<div class="cg-observer-row"><span>Total cookies</span><b>' + total + '</b></div>' +
-      '<div class="cg-observer-row"><span>Domains</span><b>' + (a.totalDomains || 0) + '</b></div>' +
-      '<div class="cg-observer-row"><span>Review/tracking</span><b>' + (a.reviewOrTracking || 0) + '</b></div>' +
-      '<div class="cg-observer-viz cg-observer-svg-v011">' +
-        '<div class="cg-observer-svg-wrap-v011">' +
-          '<svg class="cg-observer-svg-donut-v011" viewBox="0 0 100 100" aria-label="Cookie category breakdown">' +
-            '<circle class="cg-observer-svg-bg-v011" cx="50" cy="50" r="35"></circle>' +
-            donutSegmentsV011 +
-            '<text class="cg-observer-svg-main-v011" x="50" y="46">' + reviewPctV011 + '%</text>' +
-            '<text class="cg-observer-svg-sub-v011" x="50" y="61">review</text>' +
-          '</svg>' +
-        '</div>' +
-        '<div class="cg-observer-svg-legend-v011">' + donutLegendV011 + '</div>' +
-      '</div>' +
-      '<div class="cg-observer-bars">' + bars + '</div>' +
-      '<div class="cg-observer-privacy-note good"><b>Privacy:</b> raw cookie values are not exported.</div>';
+    const observerNodesV011 = [];
+
+    function observerRowV011(label, value){
+      const row = document.createElement("div");
+      row.className = "cg-observer-row";
+
+      const span = document.createElement("span");
+      span.textContent = String(label || "");
+
+      const b = document.createElement("b");
+      b.textContent = String(value === undefined || value === null ? "" : value);
+
+      row.appendChild(span);
+      row.appendChild(b);
+      return row;
+    }
+
+    observerNodesV011.push(observerRowV011("Total cookies", total));
+    observerNodesV011.push(observerRowV011("Domains", a.totalDomains || 0));
+    observerNodesV011.push(observerRowV011("Review/tracking", a.reviewOrTracking || 0));
+
+    const vizV011 = document.createElement("div");
+    vizV011.className = "cg-observer-viz cg-observer-svg-v011";
+
+    const wrapV011 = document.createElement("div");
+    wrapV011.className = "cg-observer-svg-wrap-v011";
+
+    const nsV011 = "http://www.w3.org/2000/svg";
+    const svgV011 = document.createElementNS(nsV011, "svg");
+    svgV011.setAttribute("class", "cg-observer-svg-donut-v011");
+    svgV011.setAttribute("viewBox", "0 0 100 100");
+    svgV011.setAttribute("aria-label", "Cookie category breakdown");
+
+    const bgV011 = document.createElementNS(nsV011, "circle");
+    bgV011.setAttribute("class", "cg-observer-svg-bg-v011");
+    bgV011.setAttribute("cx", "50");
+    bgV011.setAttribute("cy", "50");
+    bgV011.setAttribute("r", "35");
+    svgV011.appendChild(bgV011);
+
+    let offsetPctV011 = 0;
+
+    donutRowsV011.forEach(function(row){
+      const count = Number(row.count || 0);
+      const pctNum = total > 0 ? Math.max(0, (count / total) * 100) : 0;
+
+      if(pctNum > 0){
+        const seg = document.createElementNS(nsV011, "circle");
+        seg.setAttribute("class", "cg-observer-svg-segment-v011");
+        seg.setAttribute("cx", "50");
+        seg.setAttribute("cy", "50");
+        seg.setAttribute("r", "35");
+        seg.setAttribute("pathLength", "100");
+        seg.setAttribute("stroke", String(row.color || "currentColor"));
+        seg.setAttribute("stroke-dasharray", String(pctNum) + " " + String(Math.max(0, 100 - pctNum)));
+        seg.setAttribute("stroke-dashoffset", String(-offsetPctV011));
+        seg.setAttribute("transform", "rotate(-90 50 50)");
+        svgV011.appendChild(seg);
+      }
+
+      offsetPctV011 += pctNum;
+    });
+
+    const mainTextV011 = document.createElementNS(nsV011, "text");
+    mainTextV011.setAttribute("class", "cg-observer-svg-main-v011");
+    mainTextV011.setAttribute("x", "50");
+    mainTextV011.setAttribute("y", "46");
+    mainTextV011.textContent = String(reviewPctV011) + "%";
+    svgV011.appendChild(mainTextV011);
+
+    const subTextV011 = document.createElementNS(nsV011, "text");
+    subTextV011.setAttribute("class", "cg-observer-svg-sub-v011");
+    subTextV011.setAttribute("x", "50");
+    subTextV011.setAttribute("y", "61");
+    subTextV011.textContent = "review";
+    svgV011.appendChild(subTextV011);
+
+    wrapV011.appendChild(svgV011);
+
+    const legendV011 = document.createElement("div");
+    legendV011.className = "cg-observer-svg-legend-v011";
+
+    donutRowsV011.forEach(function(row){
+      const item = document.createElement("div");
+      item.className = "cg-observer-svg-legend-row-v011";
+
+      const dot = document.createElement("span");
+      dot.className = "cg-observer-svg-dot-v011";
+      dot.style.background = String(row.color || "");
+
+      const label = document.createElement("span");
+      label.className = "cg-observer-svg-label-v011";
+      label.textContent = String(row.label || "");
+
+      const count = document.createElement("b");
+      count.textContent = String(row.count || 0);
+
+      const pctEl = document.createElement("span");
+      pctEl.textContent = String(pctV011(row.count,total)) + "%";
+
+      item.appendChild(dot);
+      item.appendChild(label);
+      item.appendChild(count);
+      item.appendChild(pctEl);
+
+      legendV011.appendChild(item);
+    });
+
+    vizV011.appendChild(wrapV011);
+    vizV011.appendChild(legendV011);
+
+    const barsBoxV011 = document.createElement("div");
+    barsBoxV011.className = "cg-observer-bars";
+
+    donutRowsV011.forEach(function(row){
+      const bar = document.createElement("div");
+      bar.className = "cg-observer-bar";
+
+      const label = document.createElement("span");
+      label.textContent = String(row.label || "");
+
+      const value = document.createElement("b");
+      value.textContent = String(row.count || 0);
+
+      bar.appendChild(label);
+      bar.appendChild(value);
+      barsBoxV011.appendChild(bar);
+    });
+
+    const privacyV011 = document.createElement("div");
+    privacyV011.className = "cg-observer-privacy-note good";
+
+    const privacyBoldV011 = document.createElement("b");
+    privacyBoldV011.textContent = "Privacy:";
+
+    privacyV011.appendChild(privacyBoldV011);
+    privacyV011.appendChild(document.createTextNode(" raw cookie values are not exported."));
+
+    observerNodesV011.push(vizV011);
+    observerNodesV011.push(barsBoxV011);
+    observerNodesV011.push(privacyV011);
+
+    body.replaceChildren.apply(body, observerNodesV011);
   }
 
   async function captureObserverV3(render){
@@ -2927,18 +3053,34 @@
     return plan;
   }
 
+  function cgBrowserCleanupRow(label, value){
+    const row = document.createElement("div");
+    row.className = "cg-browser-cleanup-row";
+
+    const span = document.createElement("span");
+    span.textContent = String(label || "");
+
+    const b = document.createElement("b");
+    b.textContent = String(value === undefined || value === null ? "" : value);
+
+    row.appendChild(span);
+    row.appendChild(b);
+    return row;
+  }
+
   function renderCleanupPlanV4(plan){
     const body = byIdV4("cgBrowserCleanupPlan");
     const result = byIdV4("cgBrowserCleanupResult");
 
     if(!body) return;
 
-    body.innerHTML =
-      '<div class="cg-browser-cleanup-row"><span>Cookies detected</span><b>' + plan.cookieTotal + '</b></div>' +
-      '<div class="cg-browser-cleanup-row"><span>Cookies to remove</span><b>' + plan.deleteCookies.length + '</b></div>' +
-      '<div class="cg-browser-cleanup-row"><span>Cookies to preserve</span><b>' + plan.preserveCookies.length + '</b></div>' +
-      '<div class="cg-browser-cleanup-row"><span>Cache selected</span><b>' + (plan.storageTargets.cache ? "Yes" : "No") + '</b></div>' +
-      '<div class="cg-browser-cleanup-row"><span>Storage selected</span><b>' + (plan.storageTargets.localStorageAndIndexedDB ? "Yes" : "No") + '</b></div>';
+    body.replaceChildren(
+      cgBrowserCleanupRow("Cookies detected", plan.cookieTotal),
+      cgBrowserCleanupRow("Cookies to remove", plan.deleteCookies.length),
+      cgBrowserCleanupRow("Cookies to preserve", plan.preserveCookies.length),
+      cgBrowserCleanupRow("Cache selected", plan.storageTargets.cache ? "Yes" : "No"),
+      cgBrowserCleanupRow("Storage selected", plan.storageTargets.localStorageAndIndexedDB ? "Yes" : "No")
+    );
 
     if(result){
       result.className = "cg-browser-cleanup-note";
@@ -3360,6 +3502,37 @@
     return { host: h, total: matching.length, remove: remove, preserve: preserve, includeSession: include };
   }
 
+  function cgV7PlanRow(label, value){
+    const row = document.createElement("div");
+    row.className = "cg-v7-plan-row";
+
+    const span = document.createElement("span");
+    span.textContent = String(label || "");
+
+    const b = document.createElement("b");
+    b.textContent = String(value === undefined || value === null ? "" : value);
+
+    row.appendChild(span);
+    row.appendChild(b);
+    return row;
+  }
+
+  function cgV7PlanNote(label, text){
+    const note = document.createElement("div");
+    note.className = "cg-v7-plan-note";
+
+    if(label){
+      const b = document.createElement("b");
+      b.textContent = label;
+      note.appendChild(b);
+      note.appendChild(document.createTextNode(" " + String(text || "")));
+    } else {
+      note.textContent = String(text || "");
+    }
+
+    return note;
+  }
+
   async function renderPlan(){
     const cards = Array.from(document.querySelectorAll('[data-cg-v7-role="active"]'));
     const planCard = cards.find(function(el){ return low(el.textContent || "").indexOf("wipe plan") >= 0; });
@@ -3369,16 +3542,42 @@
     const removeText = plan.remove.slice(0,3).map(function(x){ return x.name + " (" + x.reason + ")"; }).join("; ") || "none";
     const preserveText = plan.preserve.slice(0,3).map(function(x){ return x.name + " (" + x.reason + ")"; }).join("; ") || "none";
 
-    planCard.innerHTML =
-      '<div><b>Wipe plan</b></div>' +
-      '<div class="cg-v7-plan-row"><span>Cookies detected</span><b>' + plan.total + '</b></div>' +
-      '<div class="cg-v7-plan-row"><span>Will remove</span><b>' + plan.remove.length + '</b></div>' +
-      '<div class="cg-v7-plan-row"><span>Will preserve</span><b>' + plan.preserve.length + '</b></div>' +
-      '<div class="cg-v7-plan-note"><b>Remove:</b> ' + removeText + '</div>' +
-      '<div class="cg-v7-plan-note"><b>Preserve:</b> ' + preserveText + '</div>' +
-      '<div class="cg-v7-plan-note">Plan target: ' + (plan.host || "this site") + '</div>' +
-      '<label class="cg-v7-plan-check"><input id="cgV7IncludeSession" type="checkbox" ' + (plan.includeSession ? "checked" : "") + '><span>Include session/auth cookies in this manual wipe</span></label>' +
-      '<button id="cgV7WipeUsingPlan" class="cg-v7-plan-button" type="button">Wipe using plan</button>';
+    const title = document.createElement("div");
+    const titleBold = document.createElement("b");
+    titleBold.textContent = "Wipe plan";
+    title.appendChild(titleBold);
+
+    const label = document.createElement("label");
+    label.className = "cg-v7-plan-check";
+
+    const input = document.createElement("input");
+    input.id = "cgV7IncludeSession";
+    input.type = "checkbox";
+    input.checked = !!plan.includeSession;
+
+    const labelText = document.createElement("span");
+    labelText.textContent = "Include session/auth cookies in this manual wipe";
+
+    label.appendChild(input);
+    label.appendChild(labelText);
+
+    const button = document.createElement("button");
+    button.id = "cgV7WipeUsingPlan";
+    button.className = "cg-v7-plan-button";
+    button.type = "button";
+    button.textContent = "Wipe using plan";
+
+    planCard.replaceChildren(
+      title,
+      cgV7PlanRow("Cookies detected", plan.total),
+      cgV7PlanRow("Will remove", plan.remove.length),
+      cgV7PlanRow("Will preserve", plan.preserve.length),
+      cgV7PlanNote("Remove:", removeText),
+      cgV7PlanNote("Preserve:", preserveText),
+      cgV7PlanNote("", "Plan target: " + (plan.host || "this site")),
+      label,
+      button
+    );
 
     const cb = document.getElementById("cgV7IncludeSession");
     if(cb){
