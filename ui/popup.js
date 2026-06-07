@@ -1196,96 +1196,66 @@
 
     const data = window.CookieGateBrowserObserverLast;
 
-    if(!data){
-      body.innerHTML =
-        '<div class="cg-transparency-note">Scan browser-held cookies across domains without needing a domain page active.</div>';
+    if(!data || !data.analysis){
+      const note = document.createElement("div");
+      note.className = "cg-transparency-note";
+      note.textContent = "Scan browser-held cookies across domains without needing a domain page active.";
+      body.replaceChildren(note);
       return;
     }
 
-    const a = data.analysis;
+    const a = data.analysis || {};
 
-    function esc(x){
-      return String(x == null ? "" : x)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
+    if(typeof renderBrowserObserver === "function"){
+      renderBrowserObserver({
+        totalCookies: a.totalCookies || 0,
+        totalDomains: a.totalDomains || 0,
+        reviewTracking: a.reviewTracking || a.reviewOrTracking || a.important || 0,
+        topDomains: a.topDomains || []
+      });
+      return;
     }
 
-    function pct(n,total){
-      if(!total || total <= 0) return "0.0%";
-      return ((Number(n || 0) / Number(total)) * 100).toFixed(1) + "%";
-    }
+    const row = function(label, value){
+      const el = document.createElement("div");
+      el.className = "cg-observer-row";
 
-    function seg(value,total,offset,color){
-      const r = 35;
-      const c = 2 * Math.PI * r;
-      const safeTotal = Math.max(1, Number(total || 0));
-      const safeValue = Math.max(0, Number(value || 0));
+      const span = document.createElement("span");
+      span.textContent = String(label || "");
 
-      if(safeValue <= 0){
-        return "";
-      }
+      const b = document.createElement("b");
+      b.textContent = String(value === undefined || value === null ? "" : value);
 
-      const dash = (safeValue / safeTotal) * c;
-      const gap = Math.max(0, c - dash);
-      const off = -1 * ((offset / safeTotal) * c);
+      el.appendChild(span);
+      el.appendChild(b);
 
-      return '<circle class="cg-native-donut-seg-v1" cx="50" cy="50" r="' + r + '" stroke="' + color + '" stroke-dasharray="' + dash.toFixed(3) + ' ' + gap.toFixed(3) + '" stroke-dashoffset="' + off.toFixed(3) + '"></circle>';
-    }
+      return el;
+    };
 
-    const total = Number(a.totalCookies || 0);
+    const domains = document.createElement("div");
+    domains.className = "cg-observer-domains";
 
-    const rows = [
-      { label: "Auth/session", count: Number(a.auth || 0), color: "#7da7ff" },
-      { label: "Preferences", count: Number(a.preferences || 0), color: "#a78bfa" },
-      { label: "Tracking", count: Number(a.tracking || 0), color: "#fbbf24" },
-      { label: "Unknown", count: Number(a.unknown || 0), color: "#fb5b66" }
-    ];
+    (a.topDomains || []).forEach(function(d){
+      const item = document.createElement("div");
+      item.className = "cg-observer-domain";
 
-    let offset = 0;
-    const segments = rows.map(function(row){
-      const out = seg(row.count,total,offset,row.color);
-      offset += row.count;
-      return out;
-    }).join("");
+      const name = document.createElement("span");
+      name.textContent = String(d.domain || "");
 
-    const chart =
-      '<div class="cg-native-observer-chart-v1">' +
-        '<svg class="cg-native-donut-v1" viewBox="0 0 100 100" aria-label="Cookie category breakdown">' +
-          '<circle class="cg-native-donut-bg-v1" cx="50" cy="50" r="35"></circle>' +
-          segments +
-          '<text class="cg-native-donut-count-v1" x="50" y="46">' + esc(total) + '</text>' +
-          '<text class="cg-native-donut-sub-v1" x="50" y="61">total</text>' +
-        '</svg>' +
-        '<div class="cg-native-legend-v1">' +
-          rows.map(function(row){
-            return '<div class="cg-native-legend-row-v1">' +
-              '<span class="cg-native-dot-v1" style="background:' + row.color + '"></span>' +
-              '<span class="cg-native-label-v1">' + esc(row.label) + '</span>' +
-              '<span class="cg-native-count-v1">' + esc(row.count) + '</span>' +
-              '<span class="cg-native-pct-v1">(' + esc(pct(row.count,total)) + ')</span>' +
-            '</div>';
-          }).join("") +
-        '</div>' +
-      '</div>';
+      const count = document.createElement("b");
+      count.textContent = String(d.count || 0);
 
-    const domains = a.topDomains.map(function(d){
-      const max = Math.max(1, a.topDomains[0] ? a.topDomains[0].count : d.count);
-      const width = Math.max(4, Math.round((d.count / max) * 100));
+      item.appendChild(name);
+      item.appendChild(count);
+      domains.appendChild(item);
+    });
 
-      return '<div class="cg-observer-domain cg-native-domain-v1">' +
-        '<div class="cg-native-domain-top-v1"><span title="' + esc(d.domain) + '">' + esc(d.domain) + '</span><b>' + esc(d.count) + '</b></div>' +
-        '<div class="cg-native-domain-track-v1"><div class="cg-native-domain-fill-v1" style="width:' + width + '%"></div></div>' +
-      '</div>';
-    }).join("");
-
-    body.innerHTML =
-      '<div class="cg-observer-row"><span>Total cookies</span><b>' + esc(a.totalCookies) + '</b></div>' +
-      '<div class="cg-observer-row"><span>Domains</span><b>' + esc(a.totalDomains) + '</b></div>' +
-      '<div class="cg-observer-row"><span>Review/tracking</span><b>' + esc(a.reviewTracking || a.important || 0) + '</b></div>' +
-      chart +
-      '<div class="cg-observer-domains">' + domains + '</div>';
+    body.replaceChildren(
+      row("Total cookies", a.totalCookies || 0),
+      row("Domains", a.totalDomains || 0),
+      row("Review/tracking", a.reviewTracking || a.reviewOrTracking || a.important || 0),
+      domains
+    );
   }
 
   function cgExportBrowserObserverPackage(){
