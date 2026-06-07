@@ -613,19 +613,29 @@
     var list = evidenceForTab();
 
     if(!list.length){
-      root.innerHTML = '<div class="cg-empty">No evidence for this view yet.</div>';
+      root.replaceChildren(makeDiv("cg-empty", "No evidence for this view yet."));
       return;
     }
 
-    root.innerHTML = list.map(function(e){
-      return '<div class="cg-event">' +
-        '<div>' +
-          '<div class="cg-event-type">' + safe(e.type) + '</div>' +
-          '<div class="cg-event-summary">' + (e.summary || state.site) + '</div>' +
-        '</div>' +
-        '<div class="cg-event-time">' + new Date(e.ts).toLocaleTimeString() + '</div>' +
-      '</div>';
-    }).join("");
+    var nodes = list.map(function(e){
+      var row = makeDiv("cg-event");
+
+      var left = document.createElement("div");
+      var type = makeDiv("cg-event-type", safe(e.type));
+      var summary = makeDiv("cg-event-summary", e.summary || state.site);
+
+      left.appendChild(type);
+      left.appendChild(summary);
+
+      var time = makeDiv("cg-event-time", new Date(e.ts).toLocaleTimeString());
+
+      row.appendChild(left);
+      row.appendChild(time);
+
+      return row;
+    });
+
+    root.replaceChildren.apply(root, nodes);
   }
 
   function renderLive(){
@@ -978,6 +988,31 @@
     }
   }
 
+  function cgMakeRow(cls, label, value, valueClass, title){
+    const row = document.createElement("div");
+    row.className = cls;
+
+    const span = document.createElement("span");
+    span.textContent = String(label || "");
+
+    const b = document.createElement("b");
+    if(valueClass) b.className = valueClass;
+    if(title) b.title = String(title);
+    b.textContent = String(value === undefined || value === null ? "" : value);
+
+    row.appendChild(span);
+    row.appendChild(b);
+
+    return row;
+  }
+
+  function cgMakeNote(text){
+    const note = document.createElement("div");
+    note.className = "cg-transparency-note";
+    note.textContent = String(text || "");
+    return note;
+  }
+
   function cgRenderSavedMode(){
     cgEnsureTransparencyPanels();
 
@@ -992,11 +1027,12 @@
     const siteMode = savedSite || s.siteMode || "inherit-global";
     const effective = siteMode === "inherit-global" ? globalMode : siteMode;
 
-    body.innerHTML =
-      '<div class="cg-saved-row"><span>Site</span><b title="' + site + '">' + site + '</b></div>' +
-      '<div class="cg-saved-row"><span>Saved rule</span><b>' + (savedSite ? cgFormatMode(siteMode) : "Using global") + '</b></div>' +
-      '<div class="cg-saved-row"><span>Effective</span><b>' + cgFormatMode(effective) + '</b></div>' +
-      '<div class="cg-transparency-note">Site choices are saved locally in this browser.</div>';
+    body.replaceChildren(
+      cgMakeRow("cg-saved-row", "Site", site, "", site),
+      cgMakeRow("cg-saved-row", "Saved rule", savedSite ? cgFormatMode(siteMode) : "Using global", "", ""),
+      cgMakeRow("cg-saved-row", "Effective", cgFormatMode(effective), "", ""),
+      cgMakeNote("Site choices are saved locally in this browser.")
+    );
   }
 
   function cgRenderWipePlan(){
@@ -1006,6 +1042,7 @@
     if(!body) return;
 
     const plan = cgComputeWipePlan();
+
     const removeTop = plan.remove.slice(0, 2).map(function(c){
       return c.name + " (" + c.reason + ")";
     }).join("; ");
@@ -1014,15 +1051,12 @@
       return c.name + " (" + c.reason + ")";
     }).join("; ");
 
-    body.innerHTML =
-      '<div class="cg-plan-row"><span>Will remove</span><b class="cg-plan-remove">' + plan.remove.length + '</b></div>' +
-      '<div class="cg-plan-row"><span>Will preserve</span><b class="cg-plan-preserve">' + plan.preserve.length + '</b></div>' +
-      '<div class="cg-transparency-note">' +
-        (plan.remove.length ? "Remove: " + removeTop : "No removable cookies detected.") +
-      '</div>' +
-      '<div class="cg-transparency-note">' +
-        (plan.preserve.length ? "Preserve: " + preserveTop : "No protected cookies detected.") +
-      '</div>';
+    body.replaceChildren(
+      cgMakeRow("cg-plan-row", "Will remove", plan.remove.length, "cg-plan-remove", ""),
+      cgMakeRow("cg-plan-row", "Will preserve", plan.preserve.length, "cg-plan-preserve", ""),
+      cgMakeNote(plan.remove.length ? "Remove: " + removeTop : "No removable cookies detected."),
+      cgMakeNote(plan.preserve.length ? "Preserve: " + preserveTop : "No protected cookies detected.")
+    );
   }
 
   function cgRenderTransparency(){
