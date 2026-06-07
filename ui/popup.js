@@ -1742,6 +1742,26 @@
     return parts.length ? parts.join(", ") : "inspect only";
   }
 
+  function cgMakeRuleButton(action, domain, label){
+    const btn = document.createElement("button");
+    btn.className = "cg-rule-mini-btn";
+    btn.setAttribute("data-action", action);
+    btn.setAttribute("data-domain", domain);
+    btn.type = "button";
+    btn.textContent = label;
+    return btn;
+  }
+
+  function cgMakeRuleButton(action, domain, label){
+    const btn = document.createElement("button");
+    btn.className = "cg-rule-mini-btn";
+    btn.setAttribute("data-action", action);
+    btn.setAttribute("data-domain", domain);
+    btn.type = "button";
+    btn.textContent = label;
+    return btn;
+  }
+
   function renderDomainRules(){
     ensureDomainRulesCard();
 
@@ -1752,31 +1772,62 @@
     const domains = Object.keys(all).sort();
 
     if(domains.length === 0){
-      list.innerHTML = '<div class="cg-rule-status">No domain rules yet.</div>';
+      const empty = document.createElement("div");
+      empty.className = "cg-rule-status";
+      empty.textContent = "No domain rules yet.";
+      list.replaceChildren(empty);
       return;
     }
 
-    list.innerHTML = domains.map(function(domain){
+    const nodes = domains.map(function(domain){
       const r = all[domain];
       const status = r.enabled ? "active" : "disabled";
       const checked = r.reachability && r.reachability.checkedAt ? r.reachability.checkedAt : "not checked";
       const pillClass = r.enabled ? "cg-rule-pill" : "cg-rule-pill warn";
 
-      return '' +
-        '<div class="cg-rule-row" data-domain="' + domain + '">' +
-          '<div class="cg-rule-row-main">' +
-            '<div class="cg-rule-domain" title="' + domain + '">' + domain + '</div>' +
-            '<div class="' + pillClass + '">' + status + '</div>' +
-          '</div>' +
-          '<div class="cg-rule-meta">Mode: ' + modeLabel(r.mode) + ' | Cleanup: ' + cleanupSummary(r) + '</div>' +
-          '<div class="cg-rule-meta">Reachability: ' + (r.reachability ? r.reachability.status : "unknown") + ' | Checked: ' + checked + '</div>' +
-          '<div class="cg-rule-row-actions">' +
-            '<button class="cg-rule-mini-btn" data-action="load" data-domain="' + domain + '" type="button">Edit</button>' +
-            '<button class="cg-rule-mini-btn" data-action="check" data-domain="' + domain + '" type="button">Check</button>' +
-            '<button class="cg-rule-mini-btn" data-action="remove" data-domain="' + domain + '" type="button">Remove</button>' +
-          '</div>' +
-        '</div>';
-    }).join("");
+      const row = document.createElement("div");
+      row.className = "cg-rule-row";
+      row.setAttribute("data-domain", domain);
+
+      const main = document.createElement("div");
+      main.className = "cg-rule-row-main";
+
+      const domainEl = document.createElement("div");
+      domainEl.className = "cg-rule-domain";
+      domainEl.title = domain;
+      domainEl.textContent = domain;
+
+      const pill = document.createElement("div");
+      pill.className = pillClass;
+      pill.textContent = status;
+
+      main.appendChild(domainEl);
+      main.appendChild(pill);
+
+      const metaMode = document.createElement("div");
+      metaMode.className = "cg-rule-meta";
+      metaMode.textContent = "Mode: " + modeLabel(r.mode) + " | Cleanup: " + cleanupSummary(r);
+
+      const metaReach = document.createElement("div");
+      metaReach.className = "cg-rule-meta";
+      metaReach.textContent = "Reachability: " + (r.reachability ? r.reachability.status : "unknown") + " | Checked: " + checked;
+
+      const actions = document.createElement("div");
+      actions.className = "cg-rule-row-actions";
+
+      actions.appendChild(cgMakeRuleButton("load", domain, "Edit"));
+      actions.appendChild(cgMakeRuleButton("check", domain, "Check"));
+      actions.appendChild(cgMakeRuleButton("remove", domain, "Remove"));
+
+      row.appendChild(main);
+      row.appendChild(metaMode);
+      row.appendChild(metaReach);
+      row.appendChild(actions);
+
+      return row;
+    });
+
+    list.replaceChildren.apply(list, nodes);
 
     list.querySelectorAll("button[data-action]").forEach(function(btn){
       btn.addEventListener("click", async function(){
@@ -1786,49 +1837,23 @@
         if(action === "load") loadRule(domain);
 
         if(action === "remove"){
-          removeRule(domain);
-          setStatus("Removed rule for " + domain + ".");
+          const all = rules();
+          delete all[domain];
+          saveRules(all);
+          renderDomainRules();
         }
 
         if(action === "check"){
-          setStatus("Checking " + domain + "...");
-          const result = await reachabilityCheck(domain);
+          const result = await checkReachability(domain);
           const all = rules();
-
           if(all[domain]){
             all[domain].reachability = result;
-            all[domain].enabled = result.ok === true;
-            all[domain].updatedAt = new Date().toISOString();
             saveRules(all);
           }
-
-          setStatus((result.ok ? "Reachable: " : "Not confirmed: ") + domain);
           renderDomainRules();
         }
       });
     });
-  }
-
-  function exportRulesPackage(){
-    const payload = {
-      schema: "cookiegate.domain_rules_package.v1",
-      exported_at: new Date().toISOString(),
-      rules: rules()
-    };
-
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-
-    a.href = url;
-    a.download = "cookiegate_domain_rules_" + Date.now() + ".json";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-
-    setTimeout(function(){
-      URL.revokeObjectURL(url);
-    }, 1000);
   }
 
   function applyCurrentSiteRuleIndicator(){
@@ -1852,9 +1877,10 @@
     const saved = document.getElementById("cgSavedModeBody");
     if(saved && saved.getAttribute("data-cg-domain-rule") !== "1"){
       saved.setAttribute("data-cg-domain-rule", "1");
-      saved.innerHTML +=
-        '<div class="cg-saved-row"><span>Registry rule</span><b>' + modeLabel(match.mode) + '</b></div>' +
-        '<div class="cg-transparency-note">Domain Registry rule is saved for this site.</div>';
+      const registryRow = cgMakeRow("cg-saved-row", "Registry rule", modeLabel(match.mode), "", "");
+      const registryNote = cgMakeNote("Domain Registry rule is saved for this site.");
+      saved.appendChild(registryRow);
+      saved.appendChild(registryNote);
     }
   }
 
