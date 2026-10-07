@@ -1,0 +1,29 @@
+{
+    "project_id":  "cookiegate",
+    "canonical_name":  "CookieGate",
+    "ecosystem":  {
+                      "registry_schema":  "constellation.service.registry.v1",
+                      "service_id":  "cookiegate",
+                      "layer":  "protection.browser-state",
+                      "role":  "Deterministic browser-state governance engine.",
+                      "standalone_first":  true,
+                      "upstream_services":  [
+
+                                            ],
+                      "downstream_users":  [
+                                               "shadowprofile",
+                                               "operators"
+                                           ],
+                      "contract_families":  [
+                                                "browser",
+                                                "cookie",
+                                                "banner",
+                                                "domain-rule",
+                                                "quarantine",
+                                                "receipt"
+                                            ],
+                      "service_map_path":  "C:\\dev\\Constellation\\ecosystem\\SERVICE_MAP.md",
+                      "registry_path":  "C:\\dev\\Constellation\\registry\\services.json",
+                      "integration_doc_path":  "docs/canonical/ECOSYSTEM_INTEGRATION.md"
+                  }
+}
