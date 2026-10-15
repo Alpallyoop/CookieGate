@@ -1,5 +1,5 @@
 param(
-  [string]$RepoRoot = 'C:\dev\cookiegate',
+  [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path,
   [string]$Build = ''
 )
 

@@ -1,0 +1,316 @@
+<!doctype html><html><head><meta charset="utf-8"><title>CookieGate — interactive prototype v2</title>
+<style>
+:root{--bg:#070b14;--panel:#111827;--panel2:#1b2232;--line:rgba(160,176,210,.18);--text:#f7f9fd;--muted:#a9b2c3;--blue:#5b5cf6;--red:#dc3036;--green:#25d366;--orange:#ff9f1c;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:#05080f;color:var(--text);font-family:Inter,'Segoe UI',system-ui,sans-serif;display:flex;justify-content:center;padding:20px}
+.app{width:390px;background:var(--bg);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.cap{font-size:11px;color:var(--muted);text-align:center;padding:8px}
+.nav{display:flex;gap:6px;padding:12px 14px 2px}
+.nav button{flex:1;border:1px solid var(--line);background:rgba(15,23,42,.74);color:var(--muted);font-size:11px;font-weight:800;padding:9px 0;border-radius:11px;cursor:pointer}
+.nav button.on{background:rgba(91,92,246,.28);border-color:rgba(143,180,255,.45);color:#fff}
+.hd{display:flex;justify-content:space-between;align-items:flex-start;padding:12px 14px 10px}
+.hd h1{font-size:15px;margin:0}.site{font-size:13px;margin-top:3px;font-weight:600}
+.pill{font-size:10px;font-weight:800;color:var(--green);border:1px solid rgba(37,211,102,.4);background:rgba(37,211,102,.12);border-radius:20px;padding:4px 9px}
+.answer{margin:2px 14px 0;background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:14px;padding:14px}
+.big{font-size:26px;font-weight:800;line-height:1}.big small{font-size:13px;color:var(--muted);font-weight:600}
+.sub{font-size:12px;color:var(--muted);margin-top:6px}.sub b.keep{color:var(--green)}.sub b.rem{color:var(--orange)}
+/* bar: uniform height, min-width segments, gaps so each is a distinct hover target */
+.bar{display:flex;gap:2px;height:12px;margin-top:12px}
+.bar i{display:block;height:100%;border-radius:3px;cursor:help;transition:filter .15s,opacity .15s}
+.bar i:hover,.bar i:focus{filter:brightness(1.25);outline:2px solid rgba(255,255,255,.6);outline-offset:1px}
+/* legend: fixed 2x2 grid, every chip identical size, status label on ALL chips */
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+.lg{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:11px;color:var(--muted);padding:5px 7px;border-radius:7px;border:1px solid var(--line);background:rgba(15,23,42,.6);cursor:help;min-height:28px}
+.lg .l{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.lg em{width:9px;height:9px;border-radius:3px;flex:none}
+.lg b{color:var(--text)}
+.st{font-size:9px;font-weight:800;width:44px;text-align:center;border-radius:4px;padding:2px 0;flex:none}
+.st.rm{color:#ffc879;background:rgba(255,159,28,.14)}.st.kp{color:#7ef0a8;background:rgba(37,211,102,.12)}
+.mode{margin:14px 14px 0}
+.mlabel{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;display:flex;justify-content:space-between}
+.scope{color:var(--blue);font-weight:700;text-transform:none;letter-spacing:0;cursor:pointer}
+.seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:3px}
+.seg button{flex:1;border:0;background:transparent;color:var(--muted);font-weight:800;font-size:12px;padding:9px 0;border-radius:8px;cursor:pointer}
+.seg button.on{background:rgba(91,92,246,.28);color:#fff;box-shadow:0 0 0 1px rgba(143,180,255,.4) inset}
+.explain{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.45}.explain b{color:var(--text)}
+.acts{display:flex;gap:9px;margin:14px}
+.btn{flex:1;border:0;border-radius:11px;padding:12px;font-weight:800;font-size:13px;cursor:pointer}
+.btn.sm{padding:9px;font-size:12px}
+.primary{background:var(--blue);color:#fff}
+.ghost{background:transparent;color:var(--red);border:1px solid rgba(220,48,54,.5)}
+.plain{background:transparent;color:#cdd5ff;border:1px solid var(--line)}
+.more{margin:0 14px 14px;border-top:1px solid var(--line)}
+.row{display:flex;justify-content:space-between;align-items:center;padding:11px 2px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--line)}
+.row span.m{color:var(--muted);font-size:12px}
+.chev{color:var(--muted);transition:.2s;display:inline-block}
+.row.open .chev{transform:rotate(180deg)}
+/* drawers are always height-capped and scroll internally */
+.drawer{display:none;padding:8px 0 10px;border-bottom:1px solid var(--line)}
+.drawer.show{display:block}
+.scroll{max-height:200px;overflow-y:auto;padding-right:4px}
+
+.tools{display:flex;gap:6px;margin-bottom:8px}
+.tools input{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:8px;color:var(--text);padding:7px 9px;font-size:12px}
+.fchip{border:1px solid var(--line);background:transparent;color:var(--muted);font-size:11px;font-weight:700;border-radius:7px;padding:0 9px;cursor:pointer}
+.fchip.on{background:rgba(91,92,246,.25);color:#fff;border-color:rgba(143,180,255,.4)}
+.grp{border:1px solid var(--line);border-radius:9px;margin:6px 0;background:rgba(15,23,42,.5)}
+.gh{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;font-size:12px;cursor:pointer}
+.gh .l{display:flex;align-items:center;gap:7px}.gh em{width:9px;height:9px;border-radius:3px}
+.gb{display:none;padding:0 8px 8px}.grp.open .gb{display:block}
+.grp.open .gh .chev{transform:rotate(180deg)}
+.ck{display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:5px 7px;border-radius:6px;margin-top:4px;background:var(--panel);cursor:help}
+.ck .nm{font-family:ui-monospace,Consolas,monospace;color:var(--text)}
+.ck .dm{color:var(--muted);font-size:10px;margin-left:6px}
+.more-btn{display:block;width:100%;margin-top:6px;background:transparent;border:1px dashed var(--line);color:var(--muted);font-size:11px;padding:6px;border-radius:7px;cursor:pointer}
+.empty{font-size:12px;color:var(--muted);padding:8px;text-align:center}
+.dom{display:flex;align-items:center;gap:8px;font-size:12px;padding:5px 2px;cursor:help}
+.dom .n{width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dom .t{flex:1;height:7px;background:var(--panel);border-radius:4px;overflow:hidden}
+.dom .t i{display:block;height:100%;background:var(--blue)}
+.dom .c{width:30px;text-align:right;color:var(--muted)}
+.note{font-size:11px;color:var(--muted);margin:6px 0 0}
+.foot{font-size:10px;color:var(--muted);text-align:center;padding:0 14px 14px}
+.toast{margin:0 14px 12px;background:rgba(37,211,102,.14);border:1px solid rgba(37,211,102,.5);color:#bff3d2;font-size:12px;padding:10px;border-radius:10px;display:none}
+.toast.show{display:block}.toast.warn{background:rgba(220,48,54,.12);border-color:rgba(220,48,54,.5);color:#ffc2c4}
+/* tooltip */
+#tip{position:fixed;z-index:99;pointer-events:none;max-width:270px;background:#0c1222;border:1px solid rgba(143,180,255,.45);border-radius:10px;padding:10px 11px;font-size:11.5px;line-height:1.45;color:#dfe5f3;box-shadow:0 10px 30px rgba(0,0,0,.55);display:none}
+#tip h4{margin:0 0 4px;font-size:12.5px;color:#fff;display:flex;justify-content:space-between;gap:8px}
+#tip .k{color:var(--muted)}
+#tip .tg{font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px}
+#tip .tg.rm{color:#ffc879;background:rgba(255,159,28,.16)}#tip .tg.kp{color:#7ef0a8;background:rgba(37,211,102,.14)}
+#tip code{font-family:ui-monospace,Consolas,monospace;color:#cdd5ff}
+#tip hr{border:0;border-top:1px solid var(--line);margin:6px 0}
+/* domain ops + observer */
+.dhead{padding:4px 14px 0}.dhead h2{font-size:15px;margin:10px 0 4px}.dhead p{font-size:12px;color:var(--muted);margin:0;line-height:1.4}
+.field{margin:10px 14px 0}.field input{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:10px;color:var(--text);padding:11px;font-size:13px}
+.hint{margin:6px 14px 0;font-size:11px;color:var(--muted)}.hint b{color:#cdd5ff}
+.dresult{margin:12px 14px 0;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:12px;color:var(--muted)}
+.dresult b{color:var(--text)}.dresult .keep{color:var(--green)}.dresult .rem{color:var(--orange)}
+.check{display:flex;align-items:center;gap:8px;margin:12px 14px 0;font-size:12px}.check input{width:16px;height:16px}
+.obs{padding:10px 14px 0;text-align:center}
+.donut{width:160px;height:160px;margin:4px auto 6px;display:block}
+.donut path{cursor:help;transition:filter .15s}.donut path:hover{filter:brightness(1.3)}
+.obs .tot{font-size:22px;font-weight:800}.obs .tl{font-size:12px;color:var(--muted);margin-bottom:8px}
+.hide{display:none}
+/* invisible scroll bars everywhere (still scrollable) */
+*{scrollbar-width:none!important;-ms-overflow-style:none}
+*::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
+</style></head>
+<body>
+<div id="tip"></div>
+<div class="app">
+  <div class="cap">INTERACTIVE PROTOTYPE v2 — hover bars/chips/donut · expand sections</div>
+  <div class="nav">
+    <button id="tActive" class="on" onclick="view('active')">Active Site</button>
+    <button id="tObs" onclick="view('obs')">Browser Observer</button>
+    <button id="tDom" onclick="view('dom')">Domain Ops</button>
+  </div>
+  <div class="hd"><div><h1>CookieGate</h1><div class="site">www.cnn.com</div></div><div class="pill">● READY</div></div>
+
+  <!-- ACTIVE SITE -->
+  <div id="vActive">
+    <div class="answer">
+      <div class="big"><span id="aTotal"></span> <small>cookies on cnn.com</small></div>
+      <div class="sub"><b class="keep"><span id="aKeep"></span> kept</b> · <b class="rem"><span id="aRem"></span> removable</b> under <span id="aMode"></span></div>
+      <div class="bar" id="aBar"></div>
+      <div class="legend" id="aLegend"></div>
+    </div>
+    <div class="mode">
+      <div class="mlabel"><span>Cleanup mode</span><span class="scope" id="aScope" onclick="toggleScope()">This site ▾</span></div>
+      <div class="seg" id="aSeg">
+        <button class="on" data-m="strict">Strict</button>
+        <button data-m="balanced">Balanced</button>
+        <button data-m="trusted">Trusted</button>
+      </div>
+      <div class="explain" id="aExplain"></div>
+    </div>
+    <div class="acts">
+      <button class="btn primary" id="aClean">Clean</button>
+      <button class="btn ghost" id="aWipe">Wipe all</button>
+    </div>
+    <div id="aToast" class="toast"></div>
+    <div class="more">
+      <div class="row" data-drawer="dCk"><span>View all <span id="aTotal2"></span> cookies</span><span class="chev">▾</span></div>
+      <div class="drawer" id="dCk">
+        <div class="tools">
+          <input id="ckFilter" placeholder="Filter by name, domain or vendor…">
+          <button class="fchip on" data-f="all">All</button>
+          <button class="fchip" data-f="remove">Remove</button>
+          <button class="fchip" data-f="keep">Keep</button>
+        </div>
+        <div class="scroll" id="ckGroups"></div>
+      </div>
+      <div class="row" data-drawer="dBw"><span>Browser-wide total</span><span class="m">930 across 244 sites <span class="chev">▾</span></span></div>
+      <div class="drawer" id="dBw">
+        <div class="scroll" id="bwList"></div>
+        <button class="more-btn" id="bwMore">Show all 244 sites</button>
+      </div>
+      <div class="row" data-drawer="dEx"><span>Export report (privacy-safe)</span><span class="chev">▾</span></div>
+      <div class="drawer" id="dEx">
+        <div style="display:flex;gap:8px"><button class="btn sm plain">Copy JSON</button><button class="btn sm plain">Download JSON</button></div>
+        <p class="note">Names, domains, categories and a hash preview only — never raw values.</p>
+      </div>
+    </div>
+    <div class="foot">Raw cookie values are never shown or exported. Nothing is deleted until you tap Clean.</div>
+  </div>
+
+  <!-- BROWSER OBSERVER -->
+  <div id="vObs" class="hide">
+    <div class="obs">
+      <svg class="donut" id="donut" viewBox="0 0 100 100"></svg>
+      <div class="tot">930 cookies</div><div class="tl">across 244 sites — hover a ring segment</div>
+    </div>
+    <div style="margin:0 14px"><div class="legend" id="oLegend"></div></div>
+    <div class="acts"><button class="btn primary">Scan browser</button><button class="btn plain">Download JSON</button></div>
+    <div class="foot">Browser-wide totals from the extension cookie API. Privacy-safe — no raw values.</div>
+  </div>
+
+  <!-- DOMAIN OPS -->
+  <div id="vDom" class="hide">
+    <div class="dhead"><h2>Domain Tools</h2><p>Inspect or wipe any domain without leaving your current tab.</p></div>
+    <div class="field"><input id="dInput" value="cnn.com/section/politics"></div>
+    <div class="hint">Normalizes to root: <b id="dRoot">cnn.com</b> (covers www. &amp; subdomains)</div>
+    <div class="acts"><button class="btn primary" id="dInspectBtn">Inspect domain</button><button class="btn ghost">Wipe domain</button></div>
+    <div class="check"><input type="checkbox" id="dAuth"> Include auth/session cookies (off = stay logged in)</div>
+    <div class="dresult" id="dResult"></div>
+    <div class="mode" style="margin-top:14px"><div class="mlabel"><span>Save a rule for this domain</span></div>
+      <div class="seg"><button class="on">Strict</button><button>Balanced</button><button>Trusted</button></div></div>
+    <div class="acts"><button class="btn primary">Save rule</button><button class="btn plain">Export rules</button></div>
+    <div class="foot">Subdomains &amp; paths fold into the root. Auth preserved unless included.</div>
+  </div>
+</div>
+
+<script>
+/* ---------- mock inventory for cnn.com (shape mirrors real privacy-safe objects) ---------- */
+var CAT={
+  auth:{n:'Auth/session',col:'#25d366',why:'Name matches a session / sign-in token pattern. Kept so you stay logged in.'},
+  trk:{n:'Tracking',col:'#dc3036',why:'Matches a known analytics or advertising tracker signature.'},
+  pref:{n:'Preferences',col:'#5b5cf6',why:'Stores a site setting (region, language, consent choice).'},
+  unk:{n:'Unknown',col:'#ff9f1c',why:'No known pattern matched — flagged for review rather than trusted.'}
+};
+var ORDER=['auth','trk','pref','unk'];
+var SEED=[
+ ['auth','sendAuthToken','.cnn.com','CNN sign-in'],['auth','sendAuthToken2','.cnn.com','CNN sign-in'],['auth','isInAuthTokenExperiment','.cnn.com','CNN sign-in'],
+ ['auth','optimizelySession','.cnn.com','Optimizely session'],['auth','resolveAuthTimestamp','.cnn.com','CNN sign-in'],['auth','WMUKID_STABLE','.cnn.com','WarnerMedia ID'],
+ ['trk','_ga','.cnn.com','Google Analytics'],['trk','_ga_XJ4T','.cnn.com','Google Analytics'],['trk','_gid','.cnn.com','Google Analytics'],['trk','_gcl_au','.cnn.com','Google Ads'],
+ ['trk','_fbp','.cnn.com','Meta Pixel'],['trk','fr','.cnn.com','Meta Pixel'],['trk','s_ecid','.cnn.com','Adobe Experience Cloud'],['trk','AMCV_7FF8','.cnn.com','Adobe Experience Cloud'],
+ ['trk','AMCVS_7FF8','.cnn.com','Adobe Experience Cloud'],['trk','s_cc','.cnn.com','Adobe Analytics'],['trk','s_sq','.cnn.com','Adobe Analytics'],['trk','_cb','.cnn.com','Chartbeat'],
+ ['trk','_cb_svref','.cnn.com','Chartbeat'],['trk','_chartbeat2','.cnn.com','Chartbeat'],['trk','_v__chartbeat3','.cnn.com','Chartbeat'],['trk','_pcid','.cnn.com','Piano'],
+ ['trk','_pctx','.cnn.com','Piano'],['trk','cX_P','.cnn.com','Piano Cxense'],['trk','cX_G','.cnn.com','Piano Cxense'],['trk','sp','collector.cdp.cnn.com','Snowplow'],
+ ['trk','_sp_ses.f5fb','.cnn.com','Snowplow'],['trk','_sp_id.f5fb','.cnn.com','Snowplow'],
+ ['pref','countryCode','.cnn.com','CNN region'],['pref','stateCode','.cnn.com','CNN region'],['pref','OptanonAlertBoxClosed','.cnn.com','OneTrust consent choice'],
+ ['unk','wbdLTP','.cnn.com',''],['unk','datid','.cnn.com',''],['unk','CDPID','.cnn.com',''],['unk','sendWMSegs','.cnn.com',''],['unk','FastAB','.cnn.com',''],
+ ['unk','FastAB_Zion','.cnn.com',''],['unk','umto','www.cnn.com',''],['unk','sato','.cnn.com',''],['unk','psmPageLoadId','.cnn.com',''],['unk','g_state','www.cnn.com',''],
+ ['unk','SecGpc','.cnn.com',''],['unk','usprivacy','.cnn.com',''],['unk','__idcontext','.cnn.com',''],['unk','wbdFch','.www.cnn.com',''],['unk','nexus-web-app-id','www.cnn.com',''],
+ ['unk','_pc_may_test_group','www.cnn.com','']
+];
+var cookies=SEED.map(function(r){return {cat:r[0],name:r[1],domain:r[2],vendor:r[3]};});
+var counts={};ORDER.forEach(function(k){counts[k]=cookies.filter(function(c){return c.cat===k;}).length;});
+
+var REMOVE={strict:['trk','unk','pref'],balanced:['trk','unk'],trusted:['trk']};
+var EXPLAIN={strict:'<b>Strict</b> removes tracking, unknown &amp; preference cookies and keeps you logged in.',
+ balanced:'<b>Balanced</b> removes tracking &amp; unknown cookies; keeps preferences and logins.',
+ trusted:'<b>Trusted</b> removes only known trackers; keeps everything else, including logins.'};
+var mode='strict',scope='This site',filter='all',query='';
+function isRem(k){return REMOVE[mode].indexOf(k)>=0;}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+/* ---------- tooltip ---------- */
+var tip=document.getElementById('tip');
+function showTip(html,ev){tip.innerHTML=html;tip.style.display='block';moveTip(ev);}
+function moveTip(ev){if(!ev)return;var w=tip.offsetWidth,h=tip.offsetHeight,x=ev.clientX+14,y=ev.clientY+14;
+ if(x+w>innerWidth-8)x=ev.clientX-w-14;if(y+h>innerHeight-8)y=ev.clientY-h-14;tip.style.left=Math.max(8,x)+'px';tip.style.top=Math.max(8,y)+'px';}
+function hideTip(){tip.style.display='none';}
+function bindTip(el,fn){el.addEventListener('mouseenter',function(e){showTip(fn(),e);});el.addEventListener('mousemove',moveTip);el.addEventListener('mouseleave',hideTip);
+ el.tabIndex=0;el.addEventListener('focus',function(){var r=el.getBoundingClientRect();showTip(fn(),{clientX:r.left,clientY:r.bottom});});el.addEventListener('blur',hideTip);}
+function tally(list,key){var m={};list.forEach(function(c){var v=c[key]||'(no vendor match)';m[v]=(m[v]||0)+1;});return Object.keys(m).sort(function(a,b){return m[b]-m[a];}).map(function(k){return k+' ('+m[k]+')';});}
+function catTip(k){
+ var list=cookies.filter(function(c){return c.cat===k;}),pct=Math.round(list.length/cookies.length*100),rm=isRem(k);
+ var vendors=tally(list,'vendor').slice(0,4).join(', ');
+ var doms=tally(list,'domain').slice(0,3).join(', ');
+ var ex=list.slice(0,5).map(function(c){return '<code>'+esc(c.name)+'</code>';}).join(', ')+(list.length>5?', +'+(list.length-5)+' more':'');
+ return '<h4><span>'+CAT[k].n+' · '+list.length+' cookies ('+pct+'%)</span><span class="tg '+(rm?'rm':'kp')+'">'+(rm?'REMOVE':'KEEP')+'</span></h4>'+
+  '<div><span class="k">Why:</span> '+CAT[k].why+'</div>'+
+  (k!=='unk'?'<div><span class="k">Sources:</span> '+esc(vendors)+'</div>':'')+
+  '<div><span class="k">Domains:</span> '+esc(doms)+'</div><hr><div><span class="k">Cookies:</span> '+ex+'</div>'+
+  '<div class="k" style="margin-top:4px">Under '+cap(mode)+': '+(rm?'removed when you tap Clean.':'kept.')+'</div>';
+}
+function cookieTip(c){var rm=isRem(c.cat);
+ return '<h4><span><code>'+esc(c.name)+'</code></span><span class="tg '+(rm?'rm':'kp')+'">'+(rm?'REMOVE':'KEEP')+'</span></h4>'+
+ '<div><span class="k">Domain:</span> '+esc(c.domain)+'</div><div><span class="k">Category:</span> '+CAT[c.cat].n+'</div>'+
+ (c.vendor?'<div><span class="k">Source:</span> '+esc(c.vendor)+'</div>':'')+'<div><span class="k">Why:</span> '+CAT[c.cat].why+'</div>'+
+ '<div class="k" style="margin-top:4px">Value: hash preview only — raw value never read out.</div>';}
+
+/* ---------- bar with minimum segment width ---------- */
+function segWidths(vals,minPct){var tot=vals.reduce(function(a,b){return a+b;},0);var raw=vals.map(function(v){return v/tot*100;});
+ var small=raw.map(function(p){return p>0&&p<minPct;});var reserved=small.reduce(function(a,s){return a+(s?minPct:0);},0);
+ var bigTot=raw.reduce(function(a,p,i){return a+(small[i]?0:p);},0);return raw.map(function(p,i){return p===0?0:(small[i]?minPct:p/bigTot*(100-reserved));});}
+
+function renderAnswer(){
+ var total=cookies.length,rem=0;ORDER.forEach(function(k){if(isRem(k))rem+=counts[k];});
+ document.getElementById('aTotal').textContent=total;document.getElementById('aTotal2').textContent=total;
+ document.getElementById('aRem').textContent=rem;document.getElementById('aKeep').textContent=total-rem;
+ document.getElementById('aMode').textContent=cap(mode);document.getElementById('aExplain').innerHTML=EXPLAIN[mode];
+ var cb=document.getElementById('aClean');cb.textContent=rem?('Clean '+rem+' cookies'):'Nothing to clean';cb.disabled=!rem;
+ var bar=document.getElementById('aBar');bar.innerHTML='';var w=segWidths(ORDER.map(function(k){return counts[k];}),8);
+ ORDER.forEach(function(k,i){if(!counts[k])return;var s=document.createElement('i');s.style.width=w[i]+'%';s.style.background=CAT[k].col;s.style.opacity=isRem(k)?1:.5;s.setAttribute('aria-label',CAT[k].n+' '+counts[k]);bindTip(s,function(){return catTip(k);});bar.appendChild(s);});
+ var lg=document.getElementById('aLegend');lg.innerHTML='';
+ ORDER.forEach(function(k){var d=document.createElement('div');d.className='lg';var rm=isRem(k);
+  d.innerHTML='<span class="l"><em style="background:'+CAT[k].col+'"></em>'+CAT[k].n+' <b>'+counts[k]+'</b></span><span class="st '+(rm?'rm':'kp')+'">'+(rm?'remove':'keep')+'</span>';
+  bindTip(d,function(){return catTip(k);});lg.appendChild(d);});
+ if(document.getElementById('dCk').classList.contains('show'))renderGroups();
+}
+
+/* ---------- grouped, filtered, capped cookie list ---------- */
+var openGroups={};var groupLimit={};
+function renderGroups(){
+ var box=document.getElementById('ckGroups');box.innerHTML='';var q=query.toLowerCase();var any=false;
+ ORDER.forEach(function(k){
+  var rm=isRem(k);if(filter==='remove'&&!rm)return;if(filter==='keep'&&rm)return;
+  var list=cookies.filter(function(c){return c.cat===k&&(!q||(c.name+' '+c.domain+' '+c.vendor).toLowerCase().indexOf(q)>=0);});
+  if(!list.length)return;any=true;
+  var g=document.createElement('div');g.className='grp'+((openGroups[k]||q)?' open':'');
+  g.innerHTML='<div class="gh"><span class="l"><em style="background:'+CAT[k].col+'"></em>'+CAT[k].n+' <b style="color:#fff">'+list.length+'</b></span><span class="l"><span class="st '+(rm?'rm':'kp')+'">'+(rm?'remove':'keep')+'</span><span class="chev">▾</span></span></div><div class="gb"></div>';
+  var gb=g.querySelector('.gb');var lim=groupLimit[k]||6;
+  list.slice(0,lim).forEach(function(c){var r=document.createElement('div');r.className='ck';r.innerHTML='<span><span class="nm">'+esc(c.name)+'</span><span class="dm">'+esc(c.domain)+'</span></span><span class="st '+(rm?'rm':'kp')+'">'+(rm?'remove':'keep')+'</span>';bindTip(r,function(){return cookieTip(c);});gb.appendChild(r);});
+  if(list.length>lim){var mb=document.createElement('button');mb.className='more-btn';mb.textContent='Show '+Math.min(10,list.length-lim)+' more of '+(list.length-lim)+' remaining';mb.onclick=function(e){e.stopPropagation();groupLimit[k]=lim+10;renderGroups();};gb.appendChild(mb);}
+  g.querySelector('.gh').onclick=function(){openGroups[k]=!openGroups[k];renderGroups();};
+  box.appendChild(g);});
+ if(!any)box.innerHTML='<div class="empty">No cookies match this filter.</div>';
+}
+
+/* ---------- browser-wide top sites (capped) ---------- */
+var SITES=[['cnn.com',64,'Tracking-heavy: Adobe, Chartbeat, Piano'],['dickssportinggoods.com',52,'Retail analytics + ad pixels'],['ebay.com',27,'Session + personalization'],['nike.com',27,'Ad pixels + session'],['google.com',24,'Account + preferences'],['bbc.com',22,'Analytics + consent'],['chatgpt.com',19,'Session + auth'],['claude.ai',16,'Session + auth'],['omio.com',16,'Booking session + ads'],['youtube.com',16,'Preferences + ads']];
+var bwLimit=5;
+function renderBw(){var box=document.getElementById('bwList');box.innerHTML='';var max=SITES[0][1];
+ SITES.slice(0,bwLimit).forEach(function(s){var r=document.createElement('div');r.className='dom';r.innerHTML='<span class="n">'+s[0]+'</span><span class="t"><i style="width:'+(s[1]/max*100)+'%"></i></span><span class="c">'+s[1]+'</span>';
+  bindTip(r,function(){return '<h4><span>'+s[0]+'</span><span>'+s[1]+' cookies</span></h4><div><span class="k">What CookieGate sees:</span> '+s[2]+'</div><div class="k" style="margin-top:4px">Open Domain Ops to inspect or wipe this site.</div>';});box.appendChild(r);});
+ var mb=document.getElementById('bwMore');if(bwLimit>=SITES.length){mb.textContent='Showing top '+SITES.length+' of 244 — full list in Download JSON';mb.disabled=true;}else{mb.textContent='Show more ('+(SITES.length-bwLimit)+' of top '+SITES.length+')';mb.disabled=false;}}
+document.getElementById('bwMore').onclick=function(){bwLimit=SITES.length;renderBw();};
+
+/* ---------- observer donut with minimum arc + hover ---------- */
+var OBS={auth:[64,'chatgpt.com, claude.ai, google.com'],trk:[437,'cnn.com, dickssportinggoods.com, nike.com'],pref:[28,'youtube.com, google.com, bbc.com'],unk:[401,'cnn.com, ebay.com, omio.com']};
+function arc(cx,cy,r,a0,a1){var p=function(a){return [cx+r*Math.cos(a),cy+r*Math.sin(a)];};var s=p(a0),e=p(a1),lg=(a1-a0)>Math.PI?1:0;return 'M'+s[0]+' '+s[1]+' A'+r+' '+r+' 0 '+lg+' 1 '+e[0]+' '+e[1];}
+function renderDonut(){var svg=document.getElementById('donut');svg.innerHTML='';var vals=ORDER.map(function(k){return OBS[k][0];});var w=segWidths(vals,6);var a=-Math.PI/2,gap=0.03;var tot=vals.reduce(function(x,y){return x+y;},0);
+ ORDER.forEach(function(k,i){var span=w[i]/100*Math.PI*2;var p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d',arc(50,50,38,a+gap,a+span-gap));p.setAttribute('stroke',CAT[k].col);p.setAttribute('stroke-width','14');p.setAttribute('fill','none');
+  bindTip(p,function(){return '<h4><span>'+CAT[k].n+' · '+OBS[k][0]+' cookies</span><span>'+Math.round(OBS[k][0]/tot*100)+'%</span></h4><div><span class="k">Why:</span> '+CAT[k].why+'</div><div><span class="k">Most from:</span> '+OBS[k][1]+'</div>';});svg.appendChild(p);a+=span;});
+ var lg=document.getElementById('oLegend');lg.innerHTML='';ORDER.forEach(function(k){var d=document.createElement('div');d.className='lg';d.innerHTML='<span class="l"><em style="background:'+CAT[k].col+'"></em>'+CAT[k].n+'</span><b style="color:#fff">'+OBS[k][0]+'</b>';lg.appendChild(d);});}
+
+/* ---------- wiring ---------- */
+document.querySelectorAll('#aSeg button').forEach(function(b){b.onclick=function(){mode=b.getAttribute('data-m');document.querySelectorAll('#aSeg button').forEach(function(x){x.classList.toggle('on',x===b);});document.getElementById('aToast').className='toast';renderAnswer();};});
+document.querySelectorAll('.row[data-drawer]').forEach(function(r){r.onclick=function(){var id=r.getAttribute('data-drawer');document.querySelectorAll('.drawer').forEach(function(d){if(d.id!==id){d.classList.remove('show');}});document.querySelectorAll('.row[data-drawer]').forEach(function(x){if(x!==r)x.classList.remove('open');});
+ var d=document.getElementById(id);var open=d.classList.toggle('show');r.classList.toggle('open',open);if(open&&id==='dCk')renderGroups();if(open&&id==='dBw')renderBw();};});
+document.querySelectorAll('.fchip').forEach(function(b){b.onclick=function(){filter=b.getAttribute('data-f');document.querySelectorAll('.fchip').forEach(function(x){x.classList.toggle('on',x===b);});renderGroups();};});
+document.getElementById('ckFilter').oninput=function(e){query=e.target.value;renderGroups();};
+function toggleScope(){scope=scope==='This site'?'Everywhere':'This site';document.getElementById('aScope').textContent=scope+' ▾';}
+document.getElementById('aClean').onclick=function(){var rem=0;ORDER.forEach(function(k){if(isRem(k))rem+=counts[k];});var t=document.getElementById('aToast');t.className='toast show';t.textContent='✓ Cleaned '+rem+' cookies on cnn.com · '+(cookies.length-rem)+' kept, including '+counts.auth+' logins. (prototype — nothing deleted)';};
+document.getElementById('aWipe').onclick=function(){var t=document.getElementById('aToast');t.className='toast warn show';t.textContent='⚠ Wipe all removes every cookie on cnn.com, including your '+counts.auth+' login cookies. A confirm step appears first. (prototype)';};
+function view(v){['active','obs','dom'].forEach(function(x){document.getElementById('v'+(x==='active'?'Active':x==='obs'?'Obs':'Dom')).classList.toggle('hide',x!==v);});
+ document.getElementById('tActive').classList.toggle('on',v==='active');document.getElementById('tObs').classList.toggle('on',v==='obs');document.getElementById('tDom').classList.toggle('on',v==='dom');hideTip();if(v==='obs')renderDonut();}
+function normHint(){var v=document.getElementById('dInput').value;var r=v.toLowerCase().trim().replace(/^https?:\/\//,'').split('/')[0].split(':')[0].replace(/^www\./,'');document.getElementById('dRoot').textContent=r||'—';dInspect();}
+function dInspect(){var inc=document.getElementById('dAuth').checked;var total=78,auth=10;var rem=inc?total:total-auth;document.getElementById('dResult').innerHTML='<b>'+total+' cookies</b> for <b>'+esc(document.getElementById('dRoot').textContent)+'</b> — '+(inc?'':'<span class="keep">'+auth+' auth/session preserved</span> · ')+'<span class="rem">'+rem+' removable</span>'+(inc?' <span style="color:#ff8f93">(includes logins)</span>':'');}
+document.getElementById('dInput').oninput=normHint;document.getElementById('dAuth').onchange=dInspect;document.getElementById('dInspectBtn').onclick=dInspect;
+renderAnswer();dInspect();
+</script>
+</body></html>

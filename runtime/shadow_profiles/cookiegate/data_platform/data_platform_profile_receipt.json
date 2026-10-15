@@ -1,0 +1,11 @@
+{
+    "schema":  "contract_registry.data_platform_profile_receipt.v1",
+    "utc":  "2026-10-13T05:30:36.4658842Z",
+    "repo_name":  "cookiegate",
+    "profile":  "C:\\dev\\cookiegate\\runtime\\shadow_profiles\\cookiegate\\data_platform\\data_platform_profile.json",
+    "profile_sha256":  "dd2e912ba772782df0f64f99271f57b1db2f9feb5b155b655fb32f03288718cb",
+    "report":  "C:\\dev\\cookiegate\\runtime\\shadow_profiles\\cookiegate\\data_platform\\data_platform_profile_report.md",
+    "detection_count":  0,
+    "files_scanned":  7858,
+    "scan_truncated":  false
+}

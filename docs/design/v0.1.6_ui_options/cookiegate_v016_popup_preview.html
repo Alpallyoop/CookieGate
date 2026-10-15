@@ -1,0 +1,1070 @@
+<!doctype html><html data-theme="light"><head><meta charset="utf-8"><title>CookieGate v0.1.6 — real popup preview (sample data)</title><style>/* CookieGate popup v0.1.6 — design D (unified) */
+:root,[data-theme=light]{--bg:#f4f5f9;--card:#fff;--hover:#f7f8fb;--line:#e5e7eb;--text:#111827;--muted:#6b7280;--acc:#4f46e5;--accSoft:#eef2ff;--track:#e9ebf1;--switch:#d1d5db;--knob:#fff;--dashed:#d1d5db;--disabled:#c7cbd4;
+  --rmBg:#fff4e5;--rmFg:#b45309;--kpBg:#ecfdf5;--kpFg:#047857;--rvBg:#f1f5f9;--rvFg:#475569;--alBg:#eef2ff;--alFg:#4338ca;
+  --okBg:#ecfdf5;--okFg:#065f46;--okBd:#a7f3d0;--warnBg:#fef2f2;--warnFg:#991b1b;--warnBd:#fecaca;--danger:#dc2626;--live:#16a34a;
+  --tipBg:#111827;--tipFg:#f3f4f6;--tipMuted:#9ca3af;--tipBd:transparent;--scrim:rgba(17,24,39,.35);color-scheme:light}
+[data-theme=dark]{--bg:#0f1218;--card:#171b23;--hover:#1d222c;--line:#2a303b;--text:#eef0f4;--muted:#9aa3b2;--acc:#818cf8;--accSoft:rgba(129,140,248,.15);--track:#232833;--switch:#3a4150;--knob:#e5e7eb;--dashed:#3a4150;--disabled:#2f3542;
+  --rmBg:rgba(251,191,36,.14);--rmFg:#fbbf24;--kpBg:rgba(52,211,153,.13);--kpFg:#34d399;--rvBg:rgba(148,163,184,.14);--rvFg:#cbd5e1;--alBg:rgba(129,140,248,.18);--alFg:#c7d2fe;
+  --okBg:rgba(52,211,153,.1);--okFg:#a7f3d0;--okBd:rgba(52,211,153,.35);--warnBg:rgba(248,113,113,.1);--warnFg:#fecaca;--warnBd:rgba(248,113,113,.4);--danger:#f87171;--live:#34d399;
+  --tipBg:#0b0d12;--tipFg:#e5e7eb;--tipMuted:#9aa3b2;--tipBd:#2a303b;--scrim:rgba(0,0,0,.55);color-scheme:dark}
+*{box-sizing:border-box}
+/* invisible scroll bars everywhere (still scrollable) */
+*{scrollbar-width:none!important;-ms-overflow-style:none}
+*::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
+html,body{margin:0;padding:0}
+body{width:380px;height:600px;background:var(--bg);color:var(--text);font-family:-apple-system,'Segoe UI',Inter,system-ui,sans-serif;font-size:13px;overflow:hidden}
+button{font-family:inherit}
+.app{width:380px;height:600px;display:flex;flex-direction:column;overflow:hidden;position:relative;background:var(--bg)}
+.hide{display:none!important}
+/* header */
+.top{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--line);flex:none}
+.fav{width:32px;height:32px;border-radius:9px;color:#fff;font-weight:800;display:grid;place-items:center;font-size:13px;flex:none;text-transform:uppercase;background:#64748b}
+.who{min-width:0;flex:1}
+.dom{font-weight:700;font-size:14px;display:flex;align-items:center;gap:7px;min-width:0}
+.dom span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.theme{height:24px;border-radius:20px;border:1px solid var(--line);background:var(--bg);color:var(--muted);display:inline-flex;align-items:center;gap:4px;cursor:pointer;padding:0 8px 0 6px;font-size:10.5px;font-weight:700;flex:none}
+.theme:hover,.theme:focus-visible{color:var(--acc);border-color:var(--acc);outline:none}
+.theme svg{width:13px;height:13px}
+.subt{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.live{font-size:11px;color:var(--live);font-weight:700;display:flex;align-items:center;gap:5px;flex:none}
+.live:before{content:'';width:7px;height:7px;border-radius:50%;background:var(--live)}
+.body{flex:1;overflow-y:auto;padding:12px 16px}
+/* search */
+.search{position:relative}
+.search input{width:100%;border:1px solid var(--line);background:var(--card);border-radius:11px;padding:10px 32px 10px 34px;font-size:12.5px;color:var(--text);outline:none}
+.search input:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--accSoft)}
+.search .ic{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--muted)}
+.search .x{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--muted);font-size:16px;cursor:pointer;display:none}
+.search.has .x{display:block}
+.back{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;background:var(--accSoft);color:var(--acc);border-radius:10px;padding:8px 10px;font-size:12px;font-weight:600}
+.back button{border:0;background:transparent;color:var(--acc);font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap}
+/* summary */
+.sum{margin-top:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.big{font-size:28px;font-weight:800;line-height:1}.big small{font-size:13px;color:var(--muted);font-weight:600}
+.sl{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.45}.sl b.k{color:var(--kpFg)}.sl b.r{color:var(--rmFg)}
+.rule{display:inline-block;margin-left:4px;font-size:10px;font-weight:700;color:var(--acc);background:var(--accSoft);border-radius:10px;padding:1px 7px}
+.shield{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--kpFg);margin-top:6px}
+.shield svg{width:13px;height:13px;flex:none}
+.bar{display:flex;gap:2px;height:12px;margin-top:12px}
+.bar i{display:block;height:100%;border-radius:3px;cursor:pointer;transition:filter .15s,opacity .2s}
+.bar i:hover,.bar i:focus-visible{filter:brightness(1.15);outline:2px solid var(--text);outline-offset:1px}
+.chips{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+.chip{display:flex;align-items:center;justify-content:space-between;gap:6px;height:32px;padding:0 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);font-size:11.5px;color:var(--muted);cursor:pointer;min-width:0}
+.chip:hover,.chip:focus-visible{border-color:var(--acc);outline:none}
+.chip.on{border-color:var(--acc);box-shadow:0 0 0 2px var(--accSoft)}
+.chip .l{display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;min-width:0}.chip em{width:9px;height:9px;border-radius:3px;flex:none}.chip b{color:var(--text)}
+.st{font-size:9.5px;font-weight:800;min-width:48px;text-align:center;border-radius:5px;padding:2px 4px;flex:none;white-space:nowrap}
+.st.rm{background:var(--rmBg);color:var(--rmFg)}.st.kp{background:var(--kpBg);color:var(--kpFg)}.st.rv{background:var(--rvBg);color:var(--rvFg)}.st.al{background:var(--alBg);color:var(--alFg)}
+.hint{font-size:10.5px;color:var(--muted);margin-top:8px;text-align:center}
+.empty{font-size:12px;color:var(--muted);text-align:center;padding:14px 6px;line-height:1.5}
+/* drawer */
+.drawer{margin-top:8px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px 10px 10px}
+.dh{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700;padding:4px 0 2px;gap:6px}
+.dh span{display:flex;align-items:center;gap:6px}
+.dh button{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:16px}
+.list{max-height:180px;overflow-y:auto}
+.ck{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11.5px;padding:6px 2px;border-bottom:1px dashed var(--line);cursor:help}
+.ck .nm{display:flex;flex-direction:column;min-width:0}
+.ck code{font-family:ui-monospace,Consolas,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ck .d{color:var(--muted);font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ck .rt{display:flex;align-items:center;gap:5px;flex:none}
+.ck.flash{background:var(--accSoft);border-radius:6px}
+.pin{width:22px;height:22px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--muted);cursor:pointer;display:grid;place-items:center;padding:0}
+.pin svg{width:12px;height:12px}
+.pin.on{color:var(--alFg);background:var(--alBg);border-color:transparent}
+.lbtns{display:flex;gap:6px;margin-top:7px}
+.more{flex:1;border:1px dashed var(--dashed);background:transparent;border-radius:8px;padding:6px;font-size:11px;color:var(--muted);cursor:pointer}
+.more:hover{color:var(--acc);border-color:var(--acc)}
+/* results */
+.res{margin-top:10px}
+.rg{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:10px 2px 6px}
+.srow{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:0 10px;height:40px;margin-bottom:6px;cursor:pointer;width:100%;color:var(--text);text-align:left}
+.srow:hover,.srow:focus-visible{border-color:var(--acc);outline:none}
+.mini{width:22px;height:22px;border-radius:6px;color:#fff;font-size:10px;font-weight:800;display:grid;place-items:center;text-transform:uppercase;flex:none}
+.srow .n{flex:1;font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.srow .c{font-size:11px;color:var(--muted);white-space:nowrap}.srow .go{color:var(--acc);font-weight:800}
+.rbox{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:2px 10px 6px}
+/* mode */
+.sec{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:16px 2px 4px}
+.sec .lc{text-transform:none;letter-spacing:0}
+.slider{position:relative;height:30px;margin:2px 12px 0}
+.slider .line{position:absolute;top:13px;left:0;right:0;height:4px;background:var(--track);border-radius:2px}
+.slider .fill{position:absolute;top:13px;left:0;height:4px;background:var(--acc);border-radius:2px;transition:width .2s}
+.slider button{position:absolute;top:5px;width:20px;height:20px;margin-left:-10px;border-radius:50%;border:2px solid var(--switch);background:var(--card);cursor:pointer;transition:.2s;padding:0}
+.slider button.on{border-color:var(--acc);background:var(--acc);box-shadow:0 0 0 5px var(--accSoft)}
+.slider button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.slabels{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin:0 0 6px}
+.slabels span{cursor:pointer;width:33%}.slabels span:nth-child(2){text-align:center}.slabels span:nth-child(3){text-align:right}
+.slabels span.on{color:var(--text);font-weight:700}
+.mdesc{font-size:12px;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 11px;line-height:1.45}.mdesc b{color:var(--text)}
+.sw{display:flex;align-items:center;gap:10px;font-size:12px;margin:10px 2px 2px;cursor:pointer;line-height:1.35}
+.sw input{position:absolute;opacity:0;width:0;height:0}.sw .t{width:34px;height:20px;border-radius:20px;background:var(--switch);position:relative;transition:.2s;flex:none}
+.sw .t:after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--knob);transition:.2s;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.sw input:checked+.t{background:var(--acc)}.sw input:checked+.t:after{left:16px;background:#fff}
+.sw input:focus-visible+.t{outline:2px solid var(--acc);outline-offset:2px}
+.deflink{font-size:11.5px;color:var(--muted);margin:6px 2px 0}
+.linkbtn{border:0;background:transparent;color:var(--acc);font-weight:700;font-size:11.5px;cursor:pointer;padding:0}
+.toast{display:none;margin-top:10px;font-size:12px;padding:10px;border-radius:10px;background:var(--okBg);color:var(--okFg);border:1px solid var(--okBd);line-height:1.45}
+.toast.show{display:block}.toast.warn{background:var(--warnBg);color:var(--warnFg);border-color:var(--warnBd)}
+.foot{display:flex;flex-direction:column;align-items:center;gap:4px;margin-top:14px;font-size:10.5px;color:var(--muted);text-align:center}
+/* CTA + tabs */
+.cta{padding:10px 16px 8px;background:var(--card);border-top:1px solid var(--line);flex:none}
+.cta .main{width:100%;border:0;background:var(--acc);color:#fff;font-weight:700;font-size:14px;padding:12px;border-radius:12px;cursor:pointer}
+.cta .main.armed{background:var(--danger)}
+.cta .main:disabled{background:var(--disabled);cursor:default}
+.cta .link{display:block;margin:6px auto 0;background:none;border:0;color:var(--danger);font-size:12px;font-weight:600;cursor:pointer}
+.cta .link:disabled{color:var(--disabled);cursor:default}
+.tabs{display:flex;background:var(--card);border-top:1px solid var(--line);flex:none}
+.tabs button{flex:1;border:0;background:none;padding:8px 0 9px;font-size:10.5px;font-weight:600;color:var(--muted);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px}
+.tabs button.on{color:var(--acc)}.tabs svg{width:20px;height:20px}
+/* browser tab */
+.gauge{position:relative;width:170px;height:170px;margin:4px auto 0}
+.gauge svg{width:100%;height:100%;display:block}.gauge path{cursor:help}.gauge path:hover{filter:brightness(1.12) saturate(1.2)}
+.center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.num{font-size:34px;font-weight:800;line-height:1}.lbl{font-size:11.5px;color:var(--muted);margin-top:3px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:10px}
+.lrow{display:flex;align-items:center;gap:10px;height:32px;font-size:12.5px;cursor:help}
+.lrow .dot{width:10px;height:10px;border-radius:50%;flex:none}.lrow .cn{flex:1;font-weight:600}
+.site{display:flex;align-items:center;gap:8px;height:32px;font-size:12px;cursor:pointer;width:100%;border:0;background:transparent;color:var(--text);padding:0;text-align:left}
+.site:hover .n,.site:focus-visible .n{color:var(--acc)}
+.site .n{width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.site .t{flex:1;height:6px;background:var(--track);border-radius:3px;overflow:hidden}.site .t i{display:block;height:100%;background:var(--acc);border-radius:3px}
+.site .c{width:30px;text-align:right;color:var(--muted)}
+.btns{display:flex;gap:8px;margin-top:10px}
+.btn{flex:1;border:0;border-radius:10px;padding:10px;font-weight:700;font-size:12.5px;cursor:pointer}
+.btn.p{background:var(--acc);color:#fff}.btn.g{background:var(--card);border:1px solid var(--line);color:var(--text)}.btn.d{background:var(--danger);color:#fff}
+.btn:disabled{opacity:.55;cursor:default}
+.btn.wide{width:100%;margin-top:8px}
+.note{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.4}
+/* confirmation sheet */
+.sheet{position:absolute;inset:0;background:var(--scrim);display:flex;align-items:flex-end;z-index:20}
+.sheetCard{width:100%;background:var(--card);border-radius:16px 16px 0 0;padding:16px;border-top:1px solid var(--line)}
+.sheetCard h3{margin:0 0 6px;font-size:15px}
+.sheetCard p{margin:0 0 6px;font-size:12.5px;color:var(--muted);line-height:1.5}
+/* tooltip */
+#tip{position:fixed;z-index:99;pointer-events:none;max-width:270px;background:var(--tipBg);color:var(--tipFg);border:1px solid var(--tipBd);border-radius:10px;padding:10px 11px;font-size:11.5px;line-height:1.45;box-shadow:0 10px 30px rgba(0,0,0,.4);display:none}
+#tip .h{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;font-weight:700;color:#fff;margin-bottom:4px}
+#tip .k{color:var(--tipMuted)}#tip code{font-family:ui-monospace,Consolas,monospace;color:#c7d2fe}
+#tip .tg{font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;white-space:nowrap}
+#tip .tg.rm{background:#78350f;color:#fde68a}#tip .tg.kp{background:#064e3b;color:#a7f3d0}#tip .tg.rv{background:#334155;color:#e2e8f0}#tip .tg.al{background:#312e81;color:#c7d2fe}
+#tip hr{border:0;border-top:1px solid #374151;margin:6px 0}
+
+html{background:#e6e8ef}body{margin:18px auto;box-shadow:0 12px 40px rgba(17,24,39,.18);border-radius:14px;overflow:hidden}</style></head><body>
+  <div id="tip" role="tooltip"></div>
+  <div class="app">
+    <header class="top">
+      <div class="fav" id="fav" aria-hidden="true"></div>
+      <div class="who">
+        <div class="dom"><span id="domName">CookieGate</span><button class="theme" id="themeBtn" type="button"></button></div>
+        <div class="subt" id="topSub">Loading…</div>
+      </div>
+      <span class="live" id="live">Live</span>
+    </header>
+
+    <main class="body" id="vSite">
+      <div class="search" id="searchWrap">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.3-4.3"/></svg>
+        <input id="q" type="text" placeholder="Search cookies, vendors or a domain (e.g. bbc.com)" autocomplete="off" spellcheck="false" aria-label="Search cookies, vendors or a domain">
+        <button class="x" id="qx" type="button" title="Clear search" aria-label="Clear search">×</button>
+      </div>
+      <div class="back hide" id="back"><span id="backTxt"></span><button id="backBtn" type="button"></button></div>
+      <div id="results" class="res hide"></div>
+
+      <div id="siteContent">
+        <section class="sum" aria-label="Cookie summary">
+          <div class="big"><span id="sTot">–</span> <small id="sOn"></small></div>
+          <div class="sl" id="sLine"></div>
+          <div class="shield hide" id="sBanner"></div>
+          <div class="bar" id="sBar"></div>
+          <div class="chips" id="sChips"></div>
+          <div class="hint" id="sHint">Tap a category to see its cookies · hover for details</div>
+        </section>
+        <section class="drawer hide" id="drawer" aria-label="Cookies in category">
+          <div class="dh"><span id="dTitle"></span><button id="dClose" type="button" title="Close" aria-label="Close list">×</button></div>
+          <div class="list" id="dList"></div>
+        </section>
+
+        <div class="sec">Cleanup mode</div>
+        <div class="slider" id="slider">
+          <div class="line"></div><div class="fill" id="fill"></div>
+          <button type="button" data-m="trusted" style="left:0%" aria-label="Trusted"></button>
+          <button type="button" data-m="balanced" style="left:50%" aria-label="Balanced"></button>
+          <button type="button" data-m="strict" style="left:100%" aria-label="Strict"></button>
+        </div>
+        <div class="slabels" id="slabels"><span data-m="trusted">Trusted</span><span data-m="balanced">Balanced</span><span data-m="strict">Strict</span></div>
+        <div class="mdesc" id="mdesc"></div>
+        <label class="sw"><input type="checkbox" id="remember"><span class="t"></span><span id="rememberLbl"></span></label>
+        <div class="deflink" id="defLine"></div>
+        <div class="toast" id="toast" role="status"></div>
+        <div class="foot"><button class="linkbtn" id="exportSite" type="button">Export privacy-safe report</button><span>Raw cookie values are never shown or exported.</span></div>
+      </div>
+    </main>
+
+    <main class="body hide" id="vBrowser">
+      <div class="gauge"><svg id="ring" viewBox="0 0 120 120" aria-label="Browser-wide cookie categories"></svg><div class="center"><div class="num" id="bTot">–</div><div class="lbl" id="bLbl">reading cookies…</div></div></div>
+      <div class="card" id="oCats"></div>
+      <div class="sec">Sites with the most cookies <span class="lc">· tap to open</span></div>
+      <div class="card"><div id="oSites"></div><div class="lbtns"><button class="more" id="oMore" type="button"></button></div><div class="note" id="oNote"></div></div>
+      <div class="btns"><button class="btn g" id="rescan" type="button">Rescan</button><button class="btn g" id="exportBrowser" type="button">Download JSON</button></div>
+      <button class="btn p wide" id="cleanAll" type="button">Clean all sites</button>
+      <div class="toast" id="btoast" role="status"></div>
+      <div class="note">Read with the extension cookie API. Exports use hash previews — never raw values. Nothing is deleted until you confirm.</div>
+    </main>
+
+    <div class="cta" id="cta"><button class="main" id="clean" type="button"></button><button class="link" id="wipe" type="button"></button></div>
+    <nav class="tabs" id="tabs">
+      <button type="button" data-v="site" id="tabSite" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>This site</button>
+      <button type="button" data-v="browser" id="tabBrowser"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg>Browser</button>
+    </nav>
+
+    <div class="sheet hide" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shTitle">
+      <div class="sheetCard">
+        <h3 id="shTitle"></h3>
+        <p id="shText"></p>
+        <label class="sw hide" id="shOptWrap"><input type="checkbox" id="shOpt"><span class="t"></span><span id="shOptLbl"></span></label>
+        <label class="sw hide" id="shOpt2Wrap"><input type="checkbox" id="shOpt2"><span class="t"></span><span id="shOpt2Lbl"></span></label>
+        <div class="btns"><button class="btn g" id="shCancel" type="button">Cancel</button><button class="btn d" id="shGo" type="button"></button></div>
+      </div>
+    </div>
+  </div>
+  <script>
+(function(){
+  function mk(n,d,o){var c={name:n,domain:d,path:"/",secure:true,httpOnly:false,session:false,hostOnly:false,storeId:"0",value:"v-"+n};for(var k in (o||{}))c[k]=o[k];return c;}
+  var cnn=["sendAuthToken","sendAuthToken2","isInAuthTokenExperiment","optimizelySession","resolveAuthTimestamp","WMUKID_STABLE","_ga","_ga_XJ4T","_gid","_gcl_au","_fbp","fr","s_ecid","AMCV_7FF8","AMCVS_7FF8","s_cc","s_sq","_cb","_cb_svref","_chartbeat2","_v__chartbeat3","_pcid","_pctx","cX_P","cX_G","_sp_ses.f5fb","_sp_id.f5fb","countryCode","stateCode","OptanonAlertBoxClosed","wbdLTP","datid","CDPID","sendWMSegs","FastAB","FastAB_Zion","umto","sato","psmPageLoadId","g_state","SecGpc","usprivacy","__idcontext","nexus-web-app-id","_pc_may_test_group"];
+  var jar=cnn.map(function(n){return mk(n,n==="umto"||n==="g_state"?"www.cnn.com":".cnn.com",{session:n==="sato"||n==="AMCVS_7FF8"});});
+  jar.push(mk("sp","collector.cdp.cnn.com",{secure:false}));
+  ["ckns_policy","_ga","_gid","atuserid","ecos.dt","ckpf_ppid","_cb","s_ecid","BBC-UID","ckns_explicit"].forEach(function(n){jar.push(mk(n,".bbc.com"));});
+  ["SID","HSID","SSID","APISID","SAPISID","__Secure-3PSID","NID","AEC"].forEach(function(n){jar.push(mk(n,".google.com"));});
+  ["_ga","_fbp","_uetsid","_ttp","dsg_session","cart_id","_gcl_au","IDE"].forEach(function(n){jar.push(mk(n,".dickssportinggoods.com"));});
+  ["_ga","_fbp","nike_session","_scid","_rdt_uuid"].forEach(function(n){jar.push(mk(n,".nike.com"));});
+  var local={"cookiegate.bannerSuppression.stats.v1":{"cnn.com":{suppressed:1}}};
+  function later(cb,v){setTimeout(function(){cb&&cb(v);},0);}
+  window.chrome={
+    tabs:{query:function(q,cb){later(cb,[{url:"https://www.cnn.com/politics",active:true}]);}},
+    cookies:{getAll:function(q,cb){var l=jar.slice();if(q&&q.domain){var d=q.domain;l=l.filter(function(c){var cd=c.domain.replace(/^\./,"");return cd===d||cd.slice(-(d.length+1))==="."+d;});}later(cb,l.map(function(c){return Object.assign({},c);}));},
+      remove:function(det,cb){var u=new URL(det.url);var i=jar.findIndex(function(c){return c.name===det.name&&c.domain.replace(/^\./,"")===u.hostname;});var r=null;if(i>=0){jar.splice(i,1);r={name:det.name};}later(cb,r);}},
+    storage:{local:{get:function(k,cb){var o={};(Array.isArray(k)?k:[k]).forEach(function(x){if(x in local)o[x]=JSON.parse(JSON.stringify(local[x]));});later(cb,o);},set:function(o,cb){Object.assign(local,JSON.parse(JSON.stringify(o)));later(cb);}}},
+    runtime:{lastError:undefined,sendMessage:function(m,cb){later(cb,{ok:true,cookies:jar.map(function(c){return Object.assign({},c);})});}},
+    browsingData:{remove:function(a,b,cb){later(cb);}}
+  };
+})();
+</script><script>/* CookieGate engine v0.1.6 — single source of truth for classification, policy,
+ * root-domain handling, removal details, privacy-safe export shapes and evidence
+ * records. Pure functions only (no DOM, no browser APIs) so it can be unit-tested.
+ *
+ * Classification = the UNION of every classifier that existed before v0.1.6
+ * (popup Active Site, popup Browser Observer v3, popup router v7, Chrome service
+ * worker), evaluated login/security FIRST so it is never less protective than any
+ * prior classifier, plus a vendor signature table used for "Source" attribution.
+ * Policy = the Chrome service worker's determineBasePolicyAction, verbatim.
+ */
+(function(root){
+  "use strict";
+
+  var MODES = ["strict","balanced","trusted"];
+
+  /* ---------- root domain (eTLD+1 heuristic) ---------- */
+  var MULTI = {"co.uk":1,"org.uk":1,"gov.uk":1,"ac.uk":1,"me.uk":1,"ltd.uk":1,"plc.uk":1,"net.uk":1,
+    "com.au":1,"net.au":1,"org.au":1,"edu.au":1,"gov.au":1,"co.nz":1,"org.nz":1,"govt.nz":1,"ac.nz":1,
+    "co.jp":1,"ne.jp":1,"or.jp":1,"ac.jp":1,"go.jp":1,"co.kr":1,"or.kr":1,"com.br":1,"net.br":1,"org.br":1,"gov.br":1,
+    "com.mx":1,"org.mx":1,"com.ar":1,"com.co":1,"com.tr":1,"com.sg":1,"com.hk":1,"com.tw":1,"com.cn":1,"net.cn":1,"org.cn":1,
+    "co.in":1,"net.in":1,"org.in":1,"gov.in":1,"ac.in":1,"co.za":1,"org.za":1,"co.il":1,"org.il":1,"ac.il":1,
+    "com.pl":1,"com.ua":1,"com.my":1,"com.ph":1,"com.vn":1,"com.pk":1,"com.eg":1,"com.sa":1,"co.id":1,"or.id":1,"co.th":1,"in.th":1};
+  function hostOf(input){
+    var s = String(input || "").trim().toLowerCase();
+    s = s.replace(/^[a-z][a-z0-9+.-]*:\/\//, "");
+    s = s.split("/")[0].split("?")[0].split("#")[0];
+    s = s.replace(/^[^@]*@/, "").replace(/:\d+$/, "").replace(/^\.+|\.+$/g, "");
+    return s;
+  }
+  function isIp(h){ return /^\d{1,3}(\.\d{1,3}){3}$/.test(h) || h.indexOf(":") >= 0; }
+  function rootDomain(input){
+    var h = hostOf(input);
+    if(!h || isIp(h) || h.indexOf(".") < 0) return h;
+    var parts = h.split(".");
+    if(parts.length <= 2) return h;
+    var last2 = parts.slice(-2).join(".");
+    if(MULTI[last2]) return parts.slice(-3).join(".");
+    return last2;
+  }
+  function looksLikeDomain(input){
+    var h = hostOf(input);
+    return /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(h) && /[a-z]/.test(h.split(".").pop());
+  }
+  function cookieBelongsTo(cookieDomain, siteRoot){
+    var d = String(cookieDomain || "").replace(/^\./, "").toLowerCase();
+    var r = String(siteRoot || "").toLowerCase();
+    return !!r && (d === r || d.slice(-(r.length + 1)) === "." + r);
+  }
+
+  /* ---------- vendor signatures (attribution only; never downgrades a login) ---------- */
+  var VENDORS = [
+    [/^_ga($|_)/, "Google Analytics", "trk"], [/^_gid$/, "Google Analytics", "trk"], [/^_gat($|_)/, "Google Analytics", "trk"],
+    [/^__utm[a-z]$/, "Google Analytics (legacy)", "trk"], [/^_gcl_/, "Google Ads", "trk"], [/^gclid$/, "Google Ads", "trk"],
+    [/^(ide|dsid|test_cookie)$/, "Google DoubleClick", "trk"], [/^(__gads|__gpi|__eoi)$/, "Google Ad Manager", "trk"],
+    [/^_fb[pc]$/, "Meta Pixel", "trk"], [/^fr$/, "Meta Pixel", "trk"],
+    [/^amcvs?_/, "Adobe Experience Cloud", "trk"], [/^s_ecid$/, "Adobe Experience Cloud", "trk"],
+    [/^s_(cc|sq|vi|fid|nr|ppv|tp)$/, "Adobe Analytics", "trk"], [/^mbox/, "Adobe Target", "trk"], [/demdex/, "Adobe Audience Manager", "trk"],
+    [/^_cb($|_)/, "Chartbeat", "trk"], [/chartbeat/, "Chartbeat", "trk"],
+    [/^_pc(id|tx)$/, "Piano", "trk"], [/^cx_[pg]$/, "Piano Cxense", "trk"],
+    [/^_sp_(id|ses)\./, "Snowplow", "trk"],
+    [/^_uet(sid|vid)/, "Microsoft Ads", "trk"], [/^_cl(ck|sk)$/, "Microsoft Clarity", "trk"],
+    [/^_hj/, "Hotjar", "trk"], [/^_ttp$|^tt_/, "TikTok Pixel", "trk"], [/^_scid/, "Snap Pixel", "trk"],
+    [/^_rdt_/, "Reddit Pixel", "trk"], [/^_pin_/, "Pinterest Tag", "trk"], [/^__qca$/, "Quantcast", "trk"],
+    [/^_ym_/, "Yandex Metrica", "trk"], [/^optimizely/, "Optimizely", "trk"], [/^_dd_s$/, "Datadog RUM", "trk"],
+    [/^optanon/, "OneTrust consent", "pref"], [/^euconsent/, "IAB TCF consent", "pref"], [/^usprivacy$/, "IAB US privacy (CCPA)", "pref"],
+    [/^cookieconsent/, "Cookie consent choice", "pref"]
+  ];
+  function vendorOf(name){
+    var n = String(name || "").toLowerCase();
+    for(var i = 0; i < VENDORS.length; i++){ if(VENDORS[i][0].test(n)) return { vendor: VENDORS[i][1], hint: VENDORS[i][2] }; }
+    return { vendor: "", hint: "" };
+  }
+
+  /* ---------- unified classifier (service-worker vocabulary) ---------- */
+  function has(n, list){ for(var i = 0; i < list.length; i++){ if(n.indexOf(list[i]) >= 0) return true; } return false; }
+  var AUTH_SUB = ["session","sess","token","auth","login","waf","keycloak","account"];
+  var SEC_SUB = ["csrf","xsrf","__host-","__secure-"];
+  var PREF_SUB = ["pref","i18n","lc-","consent","lang","theme","locale","optanon","usprivacy"];
+  var TRK_SUB = ["amcv","adobe","track","target","ubid","x-main","demdex","_fbp","_gcl","__utm","utm","conversion","uid","uuid","_ga","_gid","_dd","gclid","analytics"];
+
+  function classify(cookie, siteRoot){
+    var n = String(cookie && cookie.name || "").toLowerCase();
+    var v = vendorOf(n);
+    var cls;
+    if(n === "sid" || has(n, AUTH_SUB)) cls = "auth/session";
+    else if(has(n, SEC_SUB)) cls = "security";
+    else if(n === "skin" || has(n, PREF_SUB) || v.hint === "pref") cls = "preferences";
+    else if(has(n, TRK_SUB) || v.hint === "trk") cls = "analytics/tracking";
+    else if(siteRoot && cookie && cookie.domain && !cookieBelongsTo(cookie.domain, siteRoot)) cls = "third-party/unknown";
+    else cls = "unknown";
+    return { cls: cls, vendor: v.vendor, group: groupOf(cls) };
+  }
+  function groupOf(cls){
+    if(cls === "auth/session" || cls === "security") return "auth";
+    if(cls === "preferences") return "pref";
+    if(cls === "analytics/tracking") return "trk";
+    return "unk";
+  }
+  function v3Class(cls){
+    var g = groupOf(cls);
+    return g === "auth" ? "auth/session" : g === "pref" ? "preferences" : g === "trk" ? "tracking" : "unknown";
+  }
+
+  /* ---------- policy: Chrome service worker determineBasePolicyAction, verbatim ---------- */
+  function policyFor(cookie, classification, effectiveMode){
+    if(effectiveMode === "trusted"){
+      return cookie.session ? "allow-session" : "allow-persistent";
+    }
+    if(effectiveMode === "balanced"){
+      if(classification === "analytics/tracking" || classification === "third-party/unknown") return "delete-on-exit";
+      if(classification === "auth/session" || classification === "security" || classification === "preferences"){
+        return cookie.session ? "allow-session" : "allow-until-exit";
+      }
+      return cookie.session ? "allow-session" : "review";
+    }
+    if(classification === "auth/session" || classification === "security"){
+      return cookie.session ? "allow-session" : "allow-until-exit";
+    }
+    if(classification === "preferences") return cookie.session ? "allow-session" : "delete-on-exit";
+    if(classification === "analytics/tracking" || classification === "third-party/unknown") return "delete-on-exit";
+    return cookie.session ? "allow-session" : "review";
+  }
+  /* What "Clean" removes: the policy's delete-on-exit set, never keep-always cookies. */
+  function cleanRemoves(cookie, classification, mode, keepAlways){
+    return !keepAlways && policyFor(cookie, classification, mode) === "delete-on-exit";
+  }
+  /* What "Wipe" removes: the service worker's manual-wipe set. Logins, security and
+   * session-scoped cookies are preserved unless the user explicitly includes logins. */
+  function wipeRemoves(cookie, classification, mode, keepAlways, includeLogins){
+    if(keepAlways) return false;
+    if(includeLogins) return true;
+    return !(classification === "auth/session" || classification === "security" || policyFor(cookie, classification, mode) === "allow-session");
+  }
+
+  /* ---------- cookie identity, removal, hashing ---------- */
+  function cookieKey(c){ return (c.domain || "") + "|" + (c.path || "") + "|" + (c.name || ""); }
+  function dedupeKey(c){
+    var pk = ""; try { pk = c.partitionKey ? JSON.stringify(c.partitionKey) : ""; } catch(e){}
+    return [c.storeId || "", c.firstPartyDomain || "", pk, c.domain || "", c.path || "", c.name || ""].join("|");
+  }
+  function removalDetails(c){
+    var host = String(c.domain || "").replace(/^\./, "");
+    var d = { url: (c.secure ? "https://" : "http://") + host + (c.path || "/"), name: c.name };
+    if(c.storeId) d.storeId = c.storeId;
+    if(c.partitionKey) d.partitionKey = c.partitionKey;
+    if(c.firstPartyDomain) d.firstPartyDomain = c.firstPartyDomain;
+    return d;
+  }
+  function hashPreview(value){ /* identical to the v3 popup hashPreviewV3 */
+    if(value === null || value === undefined) return "-";
+    var s = String(value), h = 0;
+    for(var i = 0; i < s.length; i++){ h = ((h << 5) - h) + s.charCodeAt(i); h = h | 0; }
+    return ("00000000" + (h >>> 0).toString(16)).slice(-8);
+  }
+  function stableHash(input){ /* identical to the service worker stableHash */
+    var hash = 5381;
+    for(var i = 0; i < input.length; i++){ hash = ((hash << 5) + hash) + input.charCodeAt(i); hash = hash >>> 0; }
+    return hash.toString(16).padStart(8, "0");
+  }
+
+  /* ---------- privacy-safe shapes (raw values never included) ---------- */
+  function sanitize(c, siteRoot, mode, keepAlways){
+    var k = classify(c, siteRoot);
+    return {
+      name: String(c.name || ""), domain: String(c.domain || ""), path: String(c.path || "/"),
+      session: !!c.session, secure: !!c.secure, httpOnly: !!c.httpOnly,
+      sameSite: String(c.sameSite || "unspecified"), hostOnly: !!c.hostOnly,
+      storeId: c.storeId === undefined ? null : String(c.storeId),
+      expirationDate: c.expirationDate === undefined ? null : c.expirationDate,
+      valueHashPreview: hashPreview(c.value),
+      classification: v3Class(k.cls),
+      classification_detail: k.cls,
+      vendor: k.vendor || null,
+      policyAction: keepAlways ? "keep-always" : policyFor(c, k.cls, mode)
+    };
+  }
+  function analyze(cookies){ /* same shape as the v3 popup analyzeV3 */
+    var byDomain = {}, byClass = { authSession:0, preferences:0, tracking:0, unknown:0 };
+    cookies.forEach(function(c){
+      var d = String(c.domain || "unknown").replace(/^\./, "");
+      var cls = String(c.classification || "unknown").toLowerCase();
+      if(!byDomain[d]) byDomain[d] = { domain:d, count:0, authSession:0, preferences:0, tracking:0, unknown:0, important:0 };
+      var row = byDomain[d]; row.count++;
+      if(cls === "auth/session"){ byClass.authSession++; row.authSession++; }
+      else if(cls === "preferences"){ byClass.preferences++; row.preferences++; }
+      else if(cls === "tracking"){ byClass.tracking++; row.tracking++; row.important++; }
+      else { byClass.unknown++; row.unknown++; row.important++; }
+    });
+    var domains = Object.keys(byDomain).map(function(k){ return byDomain[k]; }).sort(function(a,b){ return b.count - a.count || a.domain.localeCompare(b.domain); });
+    return { totalCookies: cookies.length, totalDomains: domains.length, byClass: byClass, reviewOrTracking: byClass.tracking + byClass.unknown, topDomains: domains.slice(0,10), domains: domains };
+  }
+  function evidenceRecord(eventType, payload, isoTime){
+    var ts = isoTime || new Date().toISOString();
+    return { event_type: eventType, event_id: stableHash(eventType + "|" + ts + "|" + JSON.stringify(payload)), timestamp_utc: ts, payload: payload };
+  }
+
+  var api = { MODES:MODES, VENDORS:VENDORS, hostOf:hostOf, rootDomain:rootDomain, looksLikeDomain:looksLikeDomain, cookieBelongsTo:cookieBelongsTo,
+    vendorOf:vendorOf, classify:classify, groupOf:groupOf, v3Class:v3Class, policyFor:policyFor, cleanRemoves:cleanRemoves, wipeRemoves:wipeRemoves,
+    cookieKey:cookieKey, dedupeKey:dedupeKey, removalDetails:removalDetails, hashPreview:hashPreview, stableHash:stableHash,
+    sanitize:sanitize, analyze:analyze, evidenceRecord:evidenceRecord, VERSION:"0.1.6" };
+  root.CookieGateEngine = api;
+  if(typeof module !== "undefined" && module.exports) module.exports = api;
+})(typeof window !== "undefined" ? window : globalThis);
+</script><script>/* CookieGate popup v0.1.6 — design D (unified), wired to the real browser APIs.
+ * Engine (classification / policy / export shapes): ui/cg_engine.js
+ * Preserved contracts: cookiegateGlobalMode, cookiegateSiteModes, cookiegateKeepRules,
+ * cookiegateEvidenceLog (chrome.storage.local); cookiegate.globalMode,
+ * cookiegate.siteMode:<host>, cookiegate.domainRules.v1 (localStorage);
+ * export schemas cookiegate.browser_observer.v3 and cookiegate.site_package.v1;
+ * evidence cookiegate.cookie.delete.v1 / cookiegate.policy.*.v1.
+ * Nothing is ever deleted without an explicit tap; logins are preserved unless the
+ * user explicitly includes them; raw cookie values are never shown or exported. */
+(function(){
+  "use strict";
+
+  var E = window.CookieGateEngine;
+  var api = (typeof browser !== "undefined") ? browser : (typeof chrome !== "undefined" ? chrome : null);
+  var PROMISE_API = (typeof browser !== "undefined");
+
+  /* ---------- API helpers (promise + callback styles) ---------- */
+  function call(ns, method, args){
+    return new Promise(function(resolve){
+      try {
+        if(!ns || typeof ns[method] !== "function"){ resolve(undefined); return; }
+        if(PROMISE_API){ Promise.resolve(ns[method].apply(ns, args || [])).then(resolve, function(){ resolve(undefined); }); return; }
+        ns[method].apply(ns, (args || []).concat([function(r){
+          try { if(api.runtime && api.runtime.lastError){ resolve(undefined); return; } } catch(e){}
+          resolve(r);
+        }]));
+      } catch(e){ resolve(undefined); }
+    });
+  }
+  function store(){ return api && api.storage && api.storage.local; }
+  function sget(keys){ return call(store(), "get", [keys]).then(function(r){ return r || {}; }); }
+  function sset(obj){ return call(store(), "set", [obj]); }
+  function lsGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
+  function lsSet(k, v){ try { if(v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch(e){} }
+  function lsJson(k, f){ try { var r = localStorage.getItem(k); var v = r ? JSON.parse(r) : f; return (v && typeof v === "object" && !Array.isArray(v)) ? v : f; } catch(e){ return f; } }
+
+  /* ---------- constants ---------- */
+  var GROUPS = ["auth","trk","pref","unk"];
+  var NAME = { auth:"Logins & security", trk:"Tracking", pref:"Preferences", unk:"Unknown" };
+  var SHORT = { auth:"Logins", trk:"Tracking", pref:"Preferences", unk:"Unknown" };
+  var WHY = {
+    auth:"Sign-in, session or security cookies. Clean never removes them; Wipe keeps them unless you include logins.",
+    trk:"Matches a known analytics or advertising tracker signature.",
+    pref:"Stores a site setting such as language, region or your cookie-consent choice.",
+    unk:"No known pattern. Third-party ones are removed in Strict and Balanced; first-party ones are kept for review."
+  };
+  var COL_L = { auth:"#16a34a", trk:"#dc2626", pref:"#6366f1", unk:"#d97706" };
+  var COL_D = { auth:"#34d399", trk:"#f87171", pref:"#a5b4fc", unk:"#fbbf24" };
+  var COL = COL_L;
+  var MDESC = {
+    strict:"removes trackers, third-party and preference cookies. Logins and security cookies stay; unknown first-party cookies are kept for review.",
+    balanced:"removes trackers and third-party cookies. Preferences and logins stay.",
+    trusted:"keeps every cookie on this site. Use Wipe if you want to clear it manually."
+  };
+  var POS = { trusted:0, balanced:50, strict:100 };
+  var STATUS = { remove:["remove","rm"], keep:["keep","kp"], review:["review","rv"], always:["always","al"] };
+  var POLICY_TEXT = { "delete-on-exit":"Removed when you tap Clean", "review":"Kept for review (not removed by Clean)", "allow-session":"Kept until the browser closes",
+    "allow-until-exit":"Kept", "allow-persistent":"Kept", "keep-always":"Always kept (pinned)" };
+
+  /* ---------- state ---------- */
+  var S = { tabUrl:"", tabHost:"", activeRoot:"", isWeb:false, viewing:"", items:[], loading:false,
+    globalMode:"strict", siteModes:{}, keepRules:{}, domainRules:{}, bannerStats:{},
+    vmode:"strict", openCat:null, lim:6, q:"", flash:null, view:"site", theme:"light",
+    browser:null, browserItems:null, browserLoading:false, siteIdx:null, bwLim:5,
+    armed:false, armTimer:null, busy:false, sheet:null };
+
+  /* ---------- DOM helpers ---------- */
+  function $(id){ return document.getElementById(id); }
+  function el(tag, cls, text){ var e = document.createElement(tag); if(cls) e.className = cls; if(text !== undefined && text !== null) e.textContent = String(text); return e; }
+  function clear(n){ while(n && n.firstChild) n.removeChild(n.firstChild); }
+  function txt(s){ return document.createTextNode(String(s)); }
+  var SVGNS = "http://www.w3.org/2000/svg";
+  function svgEl(tag, attrs){ var e = document.createElementNS(SVGNS, tag); for(var k in attrs){ if(Object.prototype.hasOwnProperty.call(attrs, k)) e.setAttribute(k, attrs[k]); } return e; }
+  var ICON = {
+    moon:["M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"],
+    sun:["M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8z","M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"],
+    shield:["M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z","M9 12l2 2 4-4"],
+    pin:["M12 17v5","M8 3h8l-1.5 6L18 12H6l3.5-3z"]
+  };
+  function icon(name){ var s = svgEl("svg", { viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", "stroke-width":"2", "stroke-linecap":"round", "stroke-linejoin":"round", "aria-hidden":"true" }); ICON[name].forEach(function(d){ s.appendChild(svgEl("path", { d:d })); }); return s; }
+  function cap(s){ return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+  function plural(n, one, many){ return n + " " + (n === 1 ? one : (many || one + "s")); }
+  function favColor(d){ var h = 0; for(var i = 0; i < d.length; i++) h = (h * 31 + d.charCodeAt(i)) >>> 0; return "hsl(" + (h % 360) + ",52%,42%)"; }
+  function hostFrom(url){ try { return new URL(url).hostname.toLowerCase(); } catch(e){ return ""; } }
+
+  /* ---------- tooltip ---------- */
+  var tipEl = $("tip");
+  function buildTip(spec){
+    clear(tipEl);
+    var h = el("div", "h"); h.appendChild(el("span", null, spec.title));
+    if(spec.tag) h.appendChild(el("span", "tg " + spec.tag[1], spec.tag[0])); else if(spec.right) h.appendChild(el("span", null, spec.right));
+    tipEl.appendChild(h);
+    (spec.rows || []).forEach(function(r){
+      if(r === "hr"){ tipEl.appendChild(el("hr")); return; }
+      var d = el("div"); d.appendChild(el("span", "k", r[0] + " "));
+      if(r[2] === "code"){ r[1].forEach(function(n, i){ if(i) d.appendChild(txt(", ")); d.appendChild(el("code", null, n)); }); if(r[3]) d.appendChild(txt(r[3])); }
+      else d.appendChild(txt(r[1]));
+      tipEl.appendChild(d);
+    });
+    if(spec.foot){ var f = el("div", "k", spec.foot); f.style.marginTop = "4px"; tipEl.appendChild(f); }
+  }
+  function moveTip(ev){ if(!ev) return; var w = tipEl.offsetWidth, h = tipEl.offsetHeight, x = ev.clientX + 14, y = ev.clientY + 14;
+    if(x + w > window.innerWidth - 6) x = ev.clientX - w - 14; if(y + h > window.innerHeight - 6) y = ev.clientY - h - 14;
+    tipEl.style.left = Math.max(6, x) + "px"; tipEl.style.top = Math.max(6, y) + "px"; }
+  function hideTip(){ tipEl.style.display = "none"; }
+  function bindTip(node, specFn){
+    node.addEventListener("mouseenter", function(e){ buildTip(specFn()); tipEl.style.display = "block"; moveTip(e); });
+    node.addEventListener("mousemove", moveTip);
+    node.addEventListener("mouseleave", hideTip);
+    node.addEventListener("focus", function(){ var r = node.getBoundingClientRect(); buildTip(specFn()); tipEl.style.display = "block"; moveTip({ clientX:r.left, clientY:r.bottom }); });
+    node.addEventListener("blur", hideTip);
+    if(node.tagName !== "BUTTON" && !node.hasAttribute("tabindex")) node.setAttribute("tabindex", "0");
+  }
+  function tally(list, fn){ var m = {}; list.forEach(function(x){ var v = fn(x); if(v) m[v] = (m[v] || 0) + 1; }); return Object.keys(m).sort(function(a, b){ return m[b] - m[a]; }).map(function(k){ return k + " (" + m[k] + ")"; }); }
+
+  /* ---------- settings (read both new and legacy stores) ---------- */
+  function validMode(m){ return E.MODES.indexOf(m) >= 0; }
+  async function loadSettings(){
+    var r = await sget(["cookiegateGlobalMode","cookiegateSiteModes","cookiegateKeepRules","cookiegate.bannerSuppression.stats.v1"]);
+    var g = validMode(r.cookiegateGlobalMode) ? r.cookiegateGlobalMode : lsGet("cookiegate.globalMode");
+    S.globalMode = validMode(g) ? g : "strict";
+    S.siteModes = (r.cookiegateSiteModes && typeof r.cookiegateSiteModes === "object") ? r.cookiegateSiteModes : {};
+    S.keepRules = (r.cookiegateKeepRules && typeof r.cookiegateKeepRules === "object") ? r.cookiegateKeepRules : {};
+    S.bannerStats = (r["cookiegate.bannerSuppression.stats.v1"] && typeof r["cookiegate.bannerSuppression.stats.v1"] === "object") ? r["cookiegate.bannerSuppression.stats.v1"] : {};
+    S.domainRules = lsJson("cookiegate.domainRules.v1", {});
+    S.theme = lsGet("cookiegate.ui.theme") === "dark" ? "dark" : "light";
+  }
+  function hostsFor(d){ var a = []; if(d === S.activeRoot && S.tabHost) a.push(S.tabHost); if(a.indexOf(d) < 0) a.push(d); if(a.indexOf("www." + d) < 0) a.push("www." + d); return a; }
+  function ruleFor(d){
+    var r = S.domainRules[d];
+    if(r && typeof r === "object" && r.active !== false && r.enabled !== false && r.disabled !== true && validMode(r.mode)) return { mode:r.mode, src:"rule" };
+    var hs = hostsFor(d);
+    for(var i = 0; i < hs.length; i++){
+      if(validMode(S.siteModes[hs[i]])) return { mode:S.siteModes[hs[i]], src:"site" };
+      var l = lsGet("cookiegate.siteMode:" + hs[i]); if(validMode(l)) return { mode:l, src:"site" };
+    }
+    return null;
+  }
+  function effectiveFor(d){ var r = ruleFor(d); return r ? r.mode : S.globalMode; }
+  function keepFor(d, c){ var hs = hostsFor(d), key = E.cookieKey(c); for(var i = 0; i < hs.length; i++){ var kr = S.keepRules[hs[i]]; if(kr && kr[key]) return true; } return false; }
+
+  async function appendEvidence(records){
+    if(!records || !records.length) return;
+    var r = await sget(["cookiegateEvidenceLog"]);
+    var cur = Array.isArray(r.cookiegateEvidenceLog) ? r.cookiegateEvidenceLog : [];
+    await sset({ cookiegateEvidenceLog: records.slice().reverse().concat(cur).slice(0, 200) });
+  }
+  async function setRemembered(d, on, mode){
+    var hs = hostsFor(d), now = new Date().toISOString();
+    if(on){
+      var prev = (S.domainRules[d] && typeof S.domainRules[d] === "object") ? S.domainRules[d] : {};
+      S.domainRules[d] = { schema:"cookiegate.domain_rule.v48", root:d, domain:d, mode:mode,
+        cleanup: prev.cleanup || { cookies:true, cache:false, localStorage:false, indexedDB:false, serviceWorkers:false, preserveAuth:true },
+        enabled:true, active:true, disabled:false, status:"active", state:"active", checked:true,
+        createdAt: prev.createdAt || now, updatedAt: now, source:"popup_v016" };
+      hs.forEach(function(h){ S.siteModes[h] = mode; lsSet("cookiegate.siteMode:" + h, mode); });
+    } else {
+      delete S.domainRules[d];
+      hs.forEach(function(h){ delete S.siteModes[h]; lsSet("cookiegate.siteMode:" + h, null); });
+    }
+    try { localStorage.setItem("cookiegate.domainRules.v1", JSON.stringify(S.domainRules)); } catch(e){}
+    await sset({ cookiegateSiteModes: S.siteModes });
+    await appendEvidence([E.evidenceRecord(on ? "cookiegate.policy.site_mode_set.v1" : "cookiegate.policy.site_mode_cleared.v1", on ? { site:d, mode:mode, source:"popup" } : { site:d, source:"popup" })]);
+  }
+  async function setGlobal(mode){
+    S.globalMode = mode; lsSet("cookiegate.globalMode", mode);
+    await sset({ cookiegateGlobalMode: mode });
+    await appendEvidence([E.evidenceRecord("cookiegate.policy.global_mode_set.v1", { mode:mode, source:"popup" })]);
+  }
+  async function toggleKeep(d, c){
+    var h = (d === S.activeRoot && S.tabHost) ? S.tabHost : d, key = E.cookieKey(c), on = !keepFor(d, c);
+    if(on){ if(!S.keepRules[h] || typeof S.keepRules[h] !== "object") S.keepRules[h] = {}; S.keepRules[h][key] = true; }
+    else hostsFor(d).forEach(function(x){ if(S.keepRules[x]) delete S.keepRules[x][key]; });
+    await sset({ cookiegateKeepRules: S.keepRules });
+    await appendEvidence([E.evidenceRecord("cookiegate.policy.keep_rule_set.v1", { site:h, cookieKey:key, keepAlways:on })]);
+  }
+
+  /* ---------- cookie reads ---------- */
+  function dedupe(list){ var seen = {}, out = []; (list || []).forEach(function(c){ var k = E.dedupeKey(c); if(!seen[k]){ seen[k] = 1; out.push(c); } }); return out; }
+  async function readDomain(d){
+    if(!d || !api || !api.cookies) return [];
+    var list = await call(api.cookies, "getAll", [{ domain:d }]);
+    if(list === undefined && PROMISE_API) list = await call(api.cookies, "getAll", [{ domain:d, firstPartyDomain:null }]);
+    return dedupe(list || []);
+  }
+  async function readBrowser(){
+    var r = await call(api.runtime, "sendMessage", [{ type:"COOKIEGATE_BROWSER_OBSERVER_READ_ALL_COOKIES_V1" }]);
+    var list = (r && r.ok && Array.isArray(r.cookies) && r.cookies.length) ? r.cookies : null;
+    if(!list){ var d = await call(api.cookies, "getAll", [{}]); if(d === undefined && PROMISE_API) d = await call(api.cookies, "getAll", [{ firstPartyDomain:null }]); list = d || []; }
+    return dedupe(list);
+  }
+  function prep(list, siteRoot){
+    return list.map(function(c){ var root = siteRoot || E.rootDomain(c.domain); var k = E.classify(c, siteRoot || root); return { c:c, cls:k.cls, vendor:k.vendor, g:k.group, root:root }; });
+  }
+  function statusOf(it, d, mode){
+    if(keepFor(d, it.c)) return "always";
+    var p = E.policyFor(it.c, it.cls, mode);
+    return p === "delete-on-exit" ? "remove" : p === "review" ? "review" : "keep";
+  }
+  function cleanSet(){ var d = S.viewing; return S.items.filter(function(it){ return statusOf(it, d, S.vmode) === "remove"; }); }
+  function wipeSet(includeLogins){ var d = S.viewing; return S.items.filter(function(it){ return E.wipeRemoves(it.c, it.cls, S.vmode, keepFor(d, it.c), includeLogins); }); }
+  function groupStats(items, d, mode){ var o = {}; GROUPS.forEach(function(g){ o[g] = { n:0, rem:0, always:0 }; }); items.forEach(function(it){ var s = statusOf(it, d, mode); o[it.g].n++; if(s === "remove") o[it.g].rem++; if(s === "always") o[it.g].always++; }); return o; }
+  function pillFor(st){ if(!st.n) return ["none","kp"]; if(st.rem === 0) return ["keep","kp"]; if(st.rem === st.n) return ["remove","rm"]; return [st.rem + " go","rm"]; }
+
+  /* ---------- removal ---------- */
+  async function doRemove(list, reason, progress){
+    S.busy = true; renderCta();
+    var ok = 0, failed = 0, recs = [];
+    for(var i = 0; i < list.length; i++){
+      var it = list[i], c = it.c;
+      var r = await call(api.cookies, "remove", [E.removalDetails(c)]);
+      if(r){ ok++; } else { failed++; }
+      recs.push(E.evidenceRecord("cookiegate.cookie.delete.v1", { site: it.root || S.viewing, reason:reason, result: r ? "deleted" : "failed", name:c.name, domain:c.domain, path:c.path || "/" }));
+      if(progress) progress(i + 1, list.length);
+    }
+    await appendEvidence(recs);
+    S.busy = false;
+    return { ok:ok, failed:failed };
+  }
+  function toast(id, msg, warn){ var t = $(id); t.className = "toast show" + (warn ? " warn" : ""); t.textContent = msg; }
+  function clearToast(id){ $(id).className = "toast"; }
+
+  /* ---------- header + theme ---------- */
+  function renderHeader(){
+    var fav = $("fav"), name = $("domName"), sub = $("topSub");
+    if(S.view === "site" && S.viewing){
+      name.textContent = S.viewing; fav.textContent = S.viewing.charAt(0); fav.style.background = favColor(S.viewing);
+      sub.textContent = S.viewing === S.activeRoot ? "Active site" : "Search result — not the open tab";
+    } else {
+      name.textContent = "All sites"; fav.textContent = "∗"; fav.style.background = "var(--acc)";
+      sub.textContent = S.isWeb ? "Whole browser" : "Browser page — showing all sites";
+    }
+    $("tabSite").classList.toggle("hide", !(S.isWeb || S.viewing));
+  }
+  function applyTheme(){
+    document.documentElement.setAttribute("data-theme", S.theme);
+    COL = S.theme === "dark" ? COL_D : COL_L;
+    var b = $("themeBtn"); clear(b);
+    b.appendChild(icon(S.theme === "dark" ? "sun" : "moon")); b.appendChild(el("span", null, S.theme === "dark" ? "Light" : "Dark"));
+    b.title = S.theme === "dark" ? "Switch to light mode" : "Switch to dark mode"; b.setAttribute("aria-label", b.title);
+  }
+
+  /* ---------- site view ---------- */
+  function catTip(g){
+    var d = S.viewing, list = S.items.filter(function(it){ return it.g === g; }), st = groupStats(S.items, d, S.vmode)[g];
+    var pct = S.items.length ? Math.round(list.length / S.items.length * 100) : 0, pill = pillFor(st);
+    var rows = [["Why:", WHY[g]]];
+    var vend = tally(list, function(it){ return it.vendor; }).slice(0, 4); if(vend.length) rows.push(["Sources:", vend.join(", ")]);
+    var doms = tally(list, function(it){ return String(it.c.domain || "").replace(/^\./, ""); }).slice(0, 3); if(doms.length) rows.push(["Domains:", doms.join(", ")]);
+    if(list.length){ rows.push("hr"); rows.push(["Cookies:", list.slice(0, 5).map(function(it){ return it.c.name; }), "code", list.length > 5 ? ", +" + (list.length - 5) + " more" : ""]); }
+    return { title: NAME[g] + " · " + list.length + " (" + pct + "%)", tag:[pill[0].toUpperCase(), pill[1]], rows:rows,
+      foot: "Under " + cap(S.vmode) + ": " + st.rem + " removed by Clean, " + (st.n - st.rem) + " kept" + (st.always ? " (" + st.always + " pinned)" : "") + "." };
+  }
+  function cookieTip(it){
+    var d = S.viewing, s = statusOf(it, d, S.vmode), c = it.c;
+    var pol = s === "always" ? "keep-always" : E.policyFor(c, it.cls, S.vmode);
+    var catLabel = NAME[it.g] + (it.cls === "third-party/unknown" ? " (third-party)" : it.cls === "security" ? " (security)" : "");
+    var flags = [c.secure ? "Secure" : "", c.httpOnly ? "HttpOnly" : "", c.session ? "Session" : "Persistent"].filter(Boolean).join(" · ");
+    var rows = [["Domain:", String(c.domain || "")], ["Category:", catLabel]];
+    if(it.vendor) rows.push(["Source:", it.vendor]);
+    rows.push(["Action:", POLICY_TEXT[pol] || pol]); rows.push(["Flags:", flags]); rows.push(["Why:", WHY[it.g]]);
+    return { title:c.name, tag:[STATUS[s][0].toUpperCase(), STATUS[s][1]], rows:rows, foot:"Value fingerprint " + E.hashPreview(c.value) + " — the raw value is never shown or exported." };
+  }
+  function segWidths(vals, minPct){
+    var tot = vals.reduce(function(a, b){ return a + b; }, 0); if(!tot) return vals.map(function(){ return 0; });
+    var raw = vals.map(function(v){ return v / tot * 100; }), small = raw.map(function(p){ return p > 0 && p < minPct; });
+    var reserved = small.reduce(function(a, s){ return a + (s ? minPct : 0); }, 0), big = raw.reduce(function(a, p, i){ return a + (small[i] ? 0 : p); }, 0);
+    return raw.map(function(p, i){ return p === 0 ? 0 : (small[i] ? minPct : p / big * (100 - reserved)); });
+  }
+  function renderSite(){
+    hideTip(); renderHeader();
+    var searching = S.q.length > 0;
+    $("results").classList.toggle("hide", !searching);
+    $("siteContent").classList.toggle("hide", searching);
+    $("searchWrap").classList.toggle("has", searching);
+    var showBack = !searching && S.viewing && S.viewing !== S.activeRoot;
+    $("back").classList.toggle("hide", !showBack);
+    if(showBack){ $("backTxt").textContent = "Showing " + S.viewing; $("backBtn").textContent = S.isWeb ? "← Back to " + S.activeRoot : "← Back to Browser"; }
+    if(searching){ renderResults(); renderCta(); return; }
+
+    var d = S.viewing, items = S.items, tot = items.length, stats = groupStats(items, d, S.vmode), rem = cleanSet().length, rule = ruleFor(d);
+    $("sTot").textContent = S.loading ? "…" : tot;
+    $("sOn").textContent = (tot === 1 ? "cookie" : "cookies") + " on " + d;
+    var line = $("sLine"); clear(line);
+    if(S.loading) line.appendChild(txt("Reading cookies…"));
+    else if(tot){
+      line.appendChild(el("b", "k", (tot - rem) + " kept")); line.appendChild(txt(" · ")); line.appendChild(el("b", "r", rem + " removed by Clean"));
+      line.appendChild(txt(" under " + cap(S.vmode)));
+    } else line.appendChild(txt("CookieGate has no cookies stored for " + d + " yet."));
+    if(rule) line.appendChild(el("span", "rule", "saved for this site"));
+    else if(S.vmode === S.globalMode) line.appendChild(el("span", "rule", "default"));
+    else line.appendChild(el("span", "rule", "not saved"));
+
+    var bs = S.bannerStats[d] || S.bannerStats[String(S.tabHost).replace(/^www\./, "")];
+    var bn = (bs && Number(bs.suppressed)) || 0, sb = $("sBanner");
+    sb.classList.toggle("hide", !(bn > 0 && d === S.activeRoot)); clear(sb);
+    if(bn > 0){ sb.appendChild(icon("shield")); sb.appendChild(el("span", null, plural(bn, "cookie banner") + " hidden on this site")); }
+
+    var bar = $("sBar"); clear(bar); bar.classList.toggle("hide", !tot);
+    var w = segWidths(GROUPS.map(function(g){ return stats[g].n; }), 8);
+    GROUPS.forEach(function(g, i){
+      if(!stats[g].n) return;
+      var s = el("i"); s.style.width = w[i] + "%"; s.style.background = COL[g]; s.style.opacity = stats[g].rem ? 1 : 0.45;
+      s.setAttribute("role", "button"); s.setAttribute("aria-label", NAME[g] + " " + stats[g].n);
+      bindTip(s, function(){ return catTip(g); }); s.addEventListener("click", function(){ toggleCat(g); });
+      bar.appendChild(s);
+    });
+    var chips = $("sChips"); clear(chips); chips.classList.toggle("hide", !tot); $("sHint").classList.toggle("hide", !tot);
+    GROUPS.forEach(function(g){
+      var p = pillFor(stats[g]), b = el("button", "chip" + (S.openCat === g ? " on" : "")); b.type = "button";
+      var l = el("span", "l"), em = el("em"); em.style.background = COL[g]; l.appendChild(em); l.appendChild(txt(SHORT[g] + " ")); l.appendChild(el("b", null, stats[g].n));
+      b.appendChild(l); b.appendChild(el("span", "st " + p[1], p[0]));
+      bindTip(b, function(){ return catTip(g); }); b.addEventListener("click", function(){ toggleCat(g); });
+      chips.appendChild(b);
+    });
+    renderDrawer();
+
+    $("fill").style.width = POS[S.vmode] + "%";
+    Array.prototype.forEach.call(document.querySelectorAll("#slider button"), function(b){ b.classList.toggle("on", b.getAttribute("data-m") === S.vmode); b.setAttribute("aria-pressed", b.getAttribute("data-m") === S.vmode ? "true" : "false"); });
+    Array.prototype.forEach.call(document.querySelectorAll("#slabels span"), function(s){ s.classList.toggle("on", s.getAttribute("data-m") === S.vmode); });
+    var md = $("mdesc"); clear(md); md.appendChild(el("b", null, cap(S.vmode))); md.appendChild(txt(" " + MDESC[S.vmode]));
+    $("remember").checked = !!rule;
+    $("rememberLbl").textContent = "Always use " + cap(S.vmode) + " on " + d;
+    var dl = $("defLine"); clear(dl);
+    dl.appendChild(txt("Default for all sites: " + cap(S.globalMode) + ". "));
+    if(S.vmode !== S.globalMode){ var lb = el("button", "linkbtn", "Make " + cap(S.vmode) + " the default"); lb.type = "button"; lb.addEventListener("click", async function(){ await setGlobal(S.vmode); toast("toast", cap(S.vmode) + " is now the default for sites without a saved mode."); renderSite(); }); dl.appendChild(lb); }
+    renderCta();
+  }
+  function renderCta(){
+    var cta = $("cta"), visible = S.view === "site" && !!S.viewing;
+    cta.classList.toggle("hide", !visible); if(!visible) return;
+    var d = S.viewing, rem = cleanSet().length, cl = $("clean"), wp = $("wipe");
+    cl.classList.toggle("armed", S.armed);
+    if(S.busy) cl.textContent = "Removing…";
+    else if(S.armed) cl.textContent = "Tap again to remove " + plural(rem, "cookie");
+    else if(rem) cl.textContent = "Clean " + plural(rem, "cookie") + " on " + d;
+    else cl.textContent = S.vmode === "trusted" ? "Trusted mode — nothing to clean" : "Nothing to clean on " + d;
+    cl.disabled = !rem || S.busy || S.loading;
+    wp.textContent = "Wipe " + d + "…"; wp.disabled = !S.items.length || S.busy || S.loading;
+  }
+  function toggleCat(g){ S.openCat = S.openCat === g ? null : g; S.lim = 6; renderSite(); }
+  function renderDrawer(){
+    var dr = $("drawer"); if(!S.openCat){ dr.classList.add("hide"); return; } dr.classList.remove("hide");
+    var g = S.openCat, d = S.viewing, list = S.items.filter(function(it){ return it.g === g; }), st = groupStats(S.items, d, S.vmode)[g], p = pillFor(st);
+    var t = $("dTitle"); clear(t); t.appendChild(txt(NAME[g] + " · " + list.length)); t.appendChild(el("span", "st " + p[1], p[0]));
+    var box = $("dList"); clear(box);
+    if(!list.length){ box.appendChild(el("div", "empty", "No cookies in this category.")); return; }
+    list.slice(0, S.lim).forEach(function(it){
+      var s = statusOf(it, d, S.vmode), row = el("div", "ck" + (it.c.name === S.flash ? " flash" : ""));
+      var nm = el("span", "nm"); nm.appendChild(el("code", null, it.c.name)); nm.appendChild(el("span", "d", String(it.c.domain || "") + (it.vendor ? " · " + it.vendor : "")));
+      var rt = el("span", "rt"); rt.appendChild(el("span", "st " + STATUS[s][1], STATUS[s][0]));
+      var pin = el("button", "pin" + (s === "always" ? " on" : "")); pin.type = "button"; pin.appendChild(icon("pin"));
+      pin.title = s === "always" ? "Stop always keeping this cookie" : "Always keep this cookie"; pin.setAttribute("aria-label", pin.title);
+      pin.addEventListener("click", async function(e){ e.stopPropagation(); await toggleKeep(d, it.c); renderSite(); });
+      rt.appendChild(pin); row.appendChild(nm); row.appendChild(rt);
+      bindTip(row, function(){ return cookieTip(it); }); box.appendChild(row);
+    });
+    if(list.length > S.lim || S.lim > 6){
+      var w = el("div", "lbtns");
+      if(list.length > S.lim){ var m = el("button", "more", "Show " + Math.min(10, list.length - S.lim) + " more (" + (list.length - S.lim) + " left)"); m.type = "button"; m.addEventListener("click", function(){ S.lim += 10; renderDrawer(); }); w.appendChild(m); }
+      if(S.lim > 6){ var f = el("button", "more", "Show fewer"); f.type = "button"; f.addEventListener("click", function(){ S.lim = 6; renderDrawer(); }); w.appendChild(f); }
+      box.appendChild(w);
+    }
+    S.flash = null;
+  }
+
+  /* ---------- search (results replace the site view) ---------- */
+  function siteIndex(){
+    if(!S.browserItems) return null; if(S.siteIdx) return S.siteIdx;
+    var m = {}; S.browserItems.forEach(function(it){ if(it.root) m[it.root] = (m[it.root] || 0) + 1; }); S.siteIdx = m; return m;
+  }
+  function renderResults(){
+    var box = $("results"); clear(box);
+    var q = S.q.toLowerCase(), root = E.rootDomain(S.q), idx = siteIndex();
+    if(!idx && !S.browserLoading) loadBrowser().then(function(){ if(S.q && S.view === "site") renderSite(); });
+    var doms = idx ? Object.keys(idx).filter(function(x){ return x.indexOf(root) >= 0 || x.indexOf(q) >= 0; }).sort(function(a, b){ return idx[b] - idx[a]; }).slice(0, 5) : [];
+    var typedNew = E.looksLikeDomain(S.q) && !(idx && idx[root]) && doms.indexOf(root) < 0;
+    if(doms.length || typedNew || !idx){
+      box.appendChild(el("div", "rg", "Sites"));
+      if(!idx) box.appendChild(el("div", "empty", "Loading your browser's sites…"));
+      doms.forEach(function(x){
+        var r = el("button", "srow"); r.type = "button";
+        var mi = el("span", "mini", x.charAt(0)); mi.style.background = favColor(x); r.appendChild(mi);
+        r.appendChild(el("span", "n", x + (x === S.activeRoot ? " (open tab)" : ""))); r.appendChild(el("span", "c", plural(idx[x], "cookie"))); r.appendChild(el("span", "go", "›"));
+        r.addEventListener("click", function(){ openDomain(x); }); box.appendChild(r);
+      });
+      if(typedNew){
+        var r2 = el("button", "srow"); r2.type = "button"; var m2 = el("span", "mini", root.charAt(0)); m2.style.background = "#64748b"; r2.appendChild(m2);
+        r2.appendChild(el("span", "n", root)); r2.appendChild(el("span", "c", "no cookies stored")); r2.appendChild(el("span", "go", "›"));
+        r2.addEventListener("click", function(){ openDomain(root); }); box.appendChild(r2);
+      }
+    }
+    if(S.viewing){
+      var matches = S.items.filter(function(it){ return (it.c.name + " " + it.c.domain + " " + it.vendor + " " + NAME[it.g]).toLowerCase().indexOf(q) >= 0; });
+      box.appendChild(el("div", "rg", "Cookies on " + S.viewing + " (" + matches.length + ")"));
+      if(matches.length){
+        var rb = el("div", "rbox");
+        matches.slice(0, 8).forEach(function(it){
+          var s = statusOf(it, S.viewing, S.vmode), row = el("div", "ck"); row.style.cursor = "pointer";
+          var nm = el("span", "nm"); nm.appendChild(el("code", null, it.c.name)); nm.appendChild(el("span", "d", it.vendor || NAME[it.g]));
+          row.appendChild(nm); row.appendChild(el("span", "st " + STATUS[s][1], STATUS[s][0]));
+          bindTip(row, function(){ return cookieTip(it); }); row.addEventListener("click", function(){ selectCookie(it); }); rb.appendChild(row);
+        });
+        if(matches.length > 8) rb.appendChild(el("div", "empty", "+" + (matches.length - 8) + " more — keep typing to narrow it down"));
+        box.appendChild(rb);
+      } else box.appendChild(el("div", "empty", "No cookies on " + S.viewing + " match “" + S.q + "”." + (doms.length || typedNew ? "" : " Type a domain like bbc.com to look up another site.")));
+    }
+  }
+  function clearSearch(){ S.q = ""; $("q").value = ""; }
+  async function openDomain(d){
+    if(!d) return;
+    S.viewing = d; S.items = []; S.loading = true; S.vmode = effectiveFor(d); S.openCat = null; S.lim = 6; S.armed = false;
+    clearSearch(); clearToast("toast"); switchView("site");
+    var list = await readDomain(d);
+    if(S.viewing !== d) return;
+    S.items = prep(list, d); S.loading = false; renderSite();
+  }
+  function selectCookie(it){
+    clearSearch(); S.openCat = it.g;
+    var idx = S.items.filter(function(x){ return x.g === it.g; }).indexOf(it);
+    S.lim = Math.max(6, idx + 1); S.flash = it.c.name; renderSite();
+  }
+
+  /* ---------- browser view (the ring chart lives only here) ---------- */
+  async function loadBrowser(force){
+    if(S.browserLoading) return; if(S.browser && !force) return;
+    S.browserLoading = true;
+    var list = await readBrowser();
+    S.browser = list; S.browserItems = prep(list, null); S.siteIdx = null; S.browserLoading = false;
+  }
+  function arcPath(cx, cy, r, a0, a1){ var s = [cx + r * Math.cos(a0), cy + r * Math.sin(a0)], e = [cx + r * Math.cos(a1), cy + r * Math.sin(a1)]; return "M" + s[0] + " " + s[1] + " A" + r + " " + r + " 0 " + ((a1 - a0) > Math.PI ? 1 : 0) + " 1 " + e[0] + " " + e[1]; }
+  function browserGroups(){ var o = { auth:[], trk:[], pref:[], unk:[] }; (S.browserItems || []).forEach(function(it){ o[it.g].push(it); }); return o; }
+  function obsTip(g, groups, total){
+    var list = groups[g], top = tally(list, function(it){ return it.root; }).slice(0, 3);
+    var rows = [["Why:", WHY[g]]]; if(top.length) rows.push(["Most from:", top.join(", ")]);
+    var vend = tally(list, function(it){ return it.vendor; }).slice(0, 3); if(vend.length) rows.push(["Sources:", vend.join(", ")]);
+    return { title: NAME[g] + " · " + plural(list.length, "cookie"), right: (total ? Math.round(list.length / total * 100) : 0) + "%", rows:rows };
+  }
+  function siteTip(root){
+    var list = (S.browserItems || []).filter(function(it){ return it.root === root; }), c = { auth:0, trk:0, pref:0, unk:0 };
+    list.forEach(function(it){ c[it.g]++; });
+    var vend = tally(list, function(it){ return it.vendor; }).slice(0, 3);
+    var rows = [["Breakdown:", GROUPS.filter(function(g){ return c[g]; }).map(function(g){ return SHORT[g] + " " + c[g]; }).join(" · ")]];
+    if(vend.length) rows.push(["Sources:", vend.join(", ")]);
+    var r = ruleFor(root); rows.push(["Mode:", cap(effectiveFor(root)) + (r ? " (saved)" : " (default)")]);
+    return { title: root, right: plural(list.length, "cookie"), rows:rows, foot:"Tap to open this site." };
+  }
+  function cleanAllSet(){ return (S.browserItems || []).filter(function(it){ return E.cleanRemoves(it.c, it.cls, effectiveFor(it.root), keepFor(it.root, it.c)); }); }
+  function renderBrowser(){
+    hideTip(); renderHeader();
+    var svg = $("ring"); while(svg.firstChild) svg.removeChild(svg.firstChild);
+    if(!S.browser){
+      $("bTot").textContent = "–"; $("bLbl").textContent = "reading cookies…"; clear($("oCats")); clear($("oSites")); $("oMore").classList.add("hide"); $("oNote").textContent = ""; $("cleanAll").disabled = true;
+      if(!S.browserLoading) loadBrowser().then(function(){ if(S.view === "browser") renderBrowser(); });
+      return;
+    }
+    var groups = browserGroups(), total = S.browserItems.length, idx = siteIndex() || {}, roots = Object.keys(idx);
+    $("bTot").textContent = total; $("bLbl").textContent = "cookies · " + plural(roots.length, "site");
+    var w = segWidths(GROUPS.map(function(g){ return groups[g].length; }), 6), a = -Math.PI / 2, gap = 0.04;
+    GROUPS.forEach(function(g, i){
+      if(!groups[g].length) return; var span = w[i] / 100 * Math.PI * 2;
+      var p = svgEl("path", { d: arcPath(60, 60, 48, a + gap, a + span - gap), stroke: COL[g], "stroke-width":"14", fill:"none" });
+      bindTip(p, function(){ return obsTip(g, groups, total); }); svg.appendChild(p); a += span;
+    });
+    var cats = $("oCats"); clear(cats);
+    GROUPS.forEach(function(g){ var r = el("div", "lrow"), dot = el("span", "dot"); dot.style.background = COL[g]; r.appendChild(dot); r.appendChild(el("span", "cn", NAME[g])); r.appendChild(el("b", null, groups[g].length)); bindTip(r, function(){ return obsTip(g, groups, total); }); cats.appendChild(r); });
+    var sites = $("oSites"); clear(sites);
+    var sorted = roots.sort(function(x, y){ return idx[y] - idx[x] || x.localeCompare(y); }), max = sorted.length ? idx[sorted[0]] : 1;
+    if(!sorted.length) sites.appendChild(el("div", "empty", "No cookies readable. If you just installed CookieGate, reload your tabs and rescan."));
+    sorted.slice(0, S.bwLim).forEach(function(x){
+      var b = el("button", "site"); b.type = "button"; b.appendChild(el("span", "n", x));
+      var t = el("span", "t"), fi = el("i"); fi.style.width = (idx[x] / max * 100) + "%"; t.appendChild(fi); b.appendChild(t); b.appendChild(el("span", "c", idx[x]));
+      bindTip(b, function(){ return siteTip(x); }); b.addEventListener("click", function(){ openDomain(x); }); sites.appendChild(b);
+    });
+    var more = $("oMore"), expanded = S.bwLim > 5;
+    more.classList.toggle("hide", sorted.length <= 5);
+    more.textContent = expanded ? "Show less ▴" : "Show more (top " + Math.min(15, sorted.length) + ") ▾";
+    $("oNote").textContent = expanded && sorted.length > 15 ? "All " + sorted.length + " sites are in Download JSON." : "";
+    var n = cleanAllSet().length, ca = $("cleanAll");
+    ca.textContent = n ? "Clean " + plural(n, "cookie") + " across all sites" : "Nothing to clean across sites"; ca.disabled = !n || S.busy;
+  }
+
+  /* ---------- confirmation sheet ---------- */
+  function openSheet(spec){
+    S.sheet = spec; $("shOpt").checked = false; $("shOpt2").checked = false;
+    $("shOptWrap").classList.toggle("hide", !spec.opt); $("shOpt2Wrap").classList.toggle("hide", !spec.opt2);
+    if(spec.opt) $("shOptLbl").textContent = spec.opt; if(spec.opt2) $("shOpt2Lbl").textContent = spec.opt2;
+    renderSheet(); $("sheet").classList.remove("hide"); $("shCancel").focus();
+  }
+  function sheetOpts(){ return { a: $("shOpt").checked, b: $("shOpt2").checked }; }
+  function renderSheet(){ var s = S.sheet; if(!s) return; var o = sheetOpts(); $("shTitle").textContent = s.title; $("shText").textContent = s.text(o); var go = $("shGo"); go.textContent = s.go(o); go.disabled = !!(s.disabled && s.disabled(o)); }
+  function closeSheet(){ S.sheet = null; $("sheet").classList.add("hide"); }
+
+  /* ---------- views ---------- */
+  function switchView(v){
+    S.view = v; hideTip();
+    $("vSite").classList.toggle("hide", v !== "site"); $("vBrowser").classList.toggle("hide", v !== "browser");
+    $("tabSite").classList.toggle("on", v === "site"); $("tabBrowser").classList.toggle("on", v === "browser");
+    if(v === "site") renderSite(); else { renderCta(); renderBrowser(); }
+  }
+  function download(name, obj){
+    var blob = new Blob([JSON.stringify(obj, null, 2)], { type:"application/json" }), url = URL.createObjectURL(blob), a = document.createElement("a");
+    a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
+  }
+  var PRIVACY = { rawCookieValuesExported:false, valueHandling:"valueHashPreview only" };
+
+  /* ---------- events ---------- */
+  function bind(){
+    $("themeBtn").addEventListener("click", function(){ S.theme = S.theme === "dark" ? "light" : "dark"; lsSet("cookiegate.ui.theme", S.theme); applyTheme(); if(S.view === "site") renderSite(); else renderBrowser(); });
+    $("q").addEventListener("input", function(e){ S.q = e.target.value.trim(); renderSite(); });
+    $("q").addEventListener("keydown", function(e){
+      if(e.key === "Escape"){ clearSearch(); renderSite(); return; }
+      if(e.key !== "Enter" || !S.q) return;
+      var root = E.rootDomain(S.q), idx = siteIndex();
+      if((idx && idx[root]) || E.looksLikeDomain(S.q)){ openDomain(root); return; }
+      var hit = idx ? Object.keys(idx).filter(function(x){ return x.indexOf(root) >= 0; }).sort(function(a, b){ return idx[b] - idx[a]; })[0] : null;
+      if(hit) openDomain(hit);
+    });
+    $("qx").addEventListener("click", function(){ clearSearch(); renderSite(); $("q").focus(); });
+    $("backBtn").addEventListener("click", function(){ if(S.isWeb) openDomain(S.activeRoot); else { S.viewing = ""; switchView("browser"); } });
+    $("dClose").addEventListener("click", function(){ S.openCat = null; renderSite(); });
+    Array.prototype.forEach.call(document.querySelectorAll("#slider button, #slabels span"), function(b){
+      b.addEventListener("click", async function(){
+        var m = b.getAttribute("data-m"); if(!validMode(m) || m === S.vmode) return;
+        S.vmode = m; S.armed = false; clearToast("toast");
+        if(ruleFor(S.viewing)){ await setRemembered(S.viewing, true, m); toast("toast", "Saved: " + cap(m) + " on " + S.viewing + "."); }
+        renderSite();
+      });
+    });
+    $("remember").addEventListener("change", async function(e){
+      var on = e.target.checked; await setRemembered(S.viewing, on, S.vmode);
+      toast("toast", on ? "Saved: CookieGate will use " + cap(S.vmode) + " every time you visit " + S.viewing + "." : "Removed the saved mode for " + S.viewing + ". It now follows your default (" + cap(S.globalMode) + ").");
+      if(!on) S.vmode = effectiveFor(S.viewing);
+      renderSite();
+    });
+    $("clean").addEventListener("click", async function(){
+      if(S.busy) return; var list = cleanSet(); if(!list.length) return;
+      if(!S.armed){ S.armed = true; renderCta(); clearTimeout(S.armTimer); S.armTimer = setTimeout(function(){ S.armed = false; renderCta(); }, 4000); return; }
+      S.armed = false; clearTimeout(S.armTimer);
+      var d = S.viewing, res = await doRemove(list, "manual-clean");
+      S.items = prep(await readDomain(d), d); S.browser = null; S.browserItems = null; S.siteIdx = null;
+      toast("toast", "Removed " + plural(res.ok, "cookie") + " on " + d + "." + (res.failed ? " " + res.failed + " could not be removed (the site may have re-set them)." : "") + " Your logins were kept.", res.failed > 0);
+      renderSite();
+    });
+    $("wipe").addEventListener("click", function(){
+      if(S.busy || !S.items.length) return;
+      var d = S.viewing, logins = S.items.filter(function(it){ return it.g === "auth" && !keepFor(d, it.c); }).length;
+      openSheet({
+        title: "Wipe " + d + "?",
+        text: function(o){ var n = wipeSet(o.a).length, keep = S.items.length - n; return "Removes " + plural(n, "cookie") + " set by " + d + ". " + (o.a ? "This includes login cookies, so you will be signed out." : keep + " stay: login, security, session and pinned cookies.") ; },
+        opt: logins ? "Also remove " + plural(logins, "login & security cookie") + " (signs you out)" : null,
+        go: function(o){ return "Remove " + plural(wipeSet(o.a).length, "cookie"); },
+        disabled: function(o){ return wipeSet(o.a).length === 0; },
+        run: async function(o){ var res = await doRemove(wipeSet(o.a), "manual-wipe"); S.items = prep(await readDomain(d), d); S.browser = null; S.browserItems = null; S.siteIdx = null;
+          toast("toast", "Wiped " + plural(res.ok, "cookie") + " on " + d + "." + (res.failed ? " " + res.failed + " could not be removed." : "") + (o.a ? " You may need to sign in again." : " Logins were kept."), res.failed > 0); renderSite(); }
+      });
+    });
+    $("exportSite").addEventListener("click", async function(){
+      var d = S.viewing; if(!d) return;
+      var ev = await sget(["cookiegateEvidenceLog"]), log = Array.isArray(ev.cookiegateEvidenceLog) ? ev.cookiegateEvidenceLog : [];
+      var rule = ruleFor(d);
+      download("cookiegate_site_package_" + d.replace(/[^a-z0-9.-]+/gi, "_") + "_" + Date.now() + ".json", {
+        schema:"cookiegate.site_package.v1", exported_at:new Date().toISOString(), site:d, url: d === S.activeRoot ? S.tabUrl : null,
+        mode:{ global:S.globalMode, site: rule ? rule.mode : "inherit-global", effective:S.vmode },
+        privacy:PRIVACY, engine:"cg_engine " + E.VERSION,
+        cookies: S.items.map(function(it){ return E.sanitize(it.c, d, S.vmode, keepFor(d, it.c)); }),
+        evidence: log.filter(function(r){ return r && r.payload && (r.payload.site === d || r.payload.site === S.tabHost); }).slice(0, 50)
+      });
+    });
+    $("tabSite").addEventListener("click", function(){ if(!S.viewing && S.isWeb) openDomain(S.activeRoot); else switchView("site"); });
+    $("tabBrowser").addEventListener("click", function(){ switchView("browser"); });
+    $("oMore").addEventListener("click", function(){ S.bwLim = S.bwLim > 5 ? 5 : 15; renderBrowser(); });
+    $("rescan").addEventListener("click", async function(){ S.browser = null; S.browserItems = null; S.siteIdx = null; renderBrowser(); });
+    $("exportBrowser").addEventListener("click", async function(){
+      if(!S.browser) await loadBrowser();
+      var cookies = (S.browserItems || []).map(function(it){ return E.sanitize(it.c, it.root, effectiveFor(it.root), keepFor(it.root, it.c)); });
+      download("cookiegate_browser_observer_v3_" + Date.now() + ".json", { schema:"cookiegate.browser_observer.v3", captured_at:new Date().toISOString(), ok:true, error:null, privacy:PRIVACY, engine:"cg_engine " + E.VERSION, analysis:E.analyze(cookies), cookies:cookies });
+    });
+    $("cleanAll").addEventListener("click", function(){
+      var list = cleanAllSet(); if(!list.length || S.busy) return;
+      var sitesN = Object.keys(list.reduce(function(m, it){ m[it.root] = 1; return m; }, {})).length;
+      openSheet({
+        title:"Clean all sites?",
+        text:function(o){ return "Removes " + plural(list.length, "cookie") + " across " + plural(sitesN, "site") + ", using each site's saved mode (default: " + cap(S.globalMode) + "). Logins and security cookies stay." + (o.a ? " Your browser cache will also be cleared." : ""); },
+        opt:"Also clear cached files (browser cache)",
+        go:function(){ return "Remove " + plural(list.length, "cookie"); },
+        run: async function(o){
+          var ca = $("cleanAll");
+          var res = await doRemove(list, "manual-clean-all", function(i, n){ ca.textContent = "Removing… " + i + "/" + n; });
+          if(o.a) await call(api.browsingData, "remove", [{ since:0 }, { cache:true }]);
+          S.browser = null; S.browserItems = null; S.siteIdx = null;
+          await loadBrowser(true);
+          if(S.viewing) S.items = prep(await readDomain(S.viewing), S.viewing);
+          toast("btoast", "Removed " + plural(res.ok, "cookie") + " across sites." + (res.failed ? " " + res.failed + " could not be removed." : "") + (o.a ? " Cache cleared." : "") + " Logins were kept.", res.failed > 0);
+          renderBrowser();
+        }
+      });
+    });
+    $("shCancel").addEventListener("click", closeSheet);
+    $("shOpt").addEventListener("change", renderSheet); $("shOpt2").addEventListener("change", renderSheet);
+    $("shGo").addEventListener("click", async function(){ var s = S.sheet; if(!s) return; var o = sheetOpts(); closeSheet(); await s.run(o); });
+    document.addEventListener("keydown", function(e){ if(e.key === "Escape" && S.sheet) closeSheet(); });
+  }
+
+  /* ---------- init ---------- */
+  async function init(){
+    bind();
+    if(!E || !api){ $("topSub").textContent = "CookieGate could not start (browser API unavailable)."; return; }
+    await loadSettings(); applyTheme();
+    var tabs = await call(api.tabs, "query", [{ active:true, currentWindow:true }]), tab = tabs && tabs[0];
+    S.tabUrl = (tab && tab.url) || ""; S.isWeb = /^https?:\/\//i.test(S.tabUrl);
+    S.tabHost = S.isWeb ? hostFrom(S.tabUrl) : ""; S.activeRoot = S.isWeb ? E.rootDomain(S.tabHost) : "";
+    if(S.isWeb){ await openDomain(S.activeRoot); loadBrowser(); }
+    else { S.viewing = ""; switchView("browser"); }
+  }
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
+})();
+</script></body></html>

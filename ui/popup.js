@@ -1,9 +1,9 @@
-(function(){
+﻿(function(){
   "use strict";
 
   var api = null;
   if (typeof browser !== "undefined") api = browser;
-  if (typeof chrome !== "undefined") api = chrome;
+  else if (typeof chrome !== "undefined") api = chrome;
 
   function byId(id){ return document.getElementById(id); }
 
@@ -1316,6 +1316,57 @@
   });
 })();
 
+
+// COOKIEGATE_V012_EXPORT_RULES_PACKAGE_REPAIR
+(function(){
+  "use strict";
+
+  function cgReadJson(key, fallback){
+    try {
+      var raw = localStorage.getItem(key);
+      if(!raw) return fallback;
+      var parsed = JSON.parse(raw);
+      return parsed == null ? fallback : parsed;
+    } catch(e){
+      return fallback;
+    }
+  }
+
+  function cgDownloadJson(filename, payload){
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){
+      try { URL.revokeObjectURL(url); } catch(e){}
+      try { a.remove(); } catch(e){}
+    }, 250);
+  }
+
+  function exportRulesPackage(){
+    var rules = cgReadJson("cookiegate.domainRules.v1", {});
+    var lastCheck = cgReadJson("cookiegate.domainRules.lastCheck.v1", {});
+
+    var payload = {
+      schema: "cookiegate.domain_rules.export.v1",
+      producer: "CookieGate",
+      version: "0.1.2",
+      exportedAt: new Date().toISOString(),
+      note: "CookieGate Domain Ops rule export. Raw cookie values are not included.",
+      rules: rules && typeof rules === "object" && !Array.isArray(rules) ? rules : {},
+      reachability: lastCheck && typeof lastCheck === "object" && !Array.isArray(lastCheck) ? lastCheck : {}
+    };
+
+    cgDownloadJson("cookiegate_domain_ops_rules_" + Date.now() + ".json", payload);
+    return payload;
+  }
+
+  window.exportRulesPackage = window.exportRulesPackage || exportRulesPackage;
+  window.CookieGateExportRulesPackage = window.CookieGateExportRulesPackage || exportRulesPackage;
+})();
 // COOKIEGATE_DOMAIN_REGISTRY_GOVERNANCE_V1
 (function(){
   const RULES_KEY = "cookiegate.domainRules.v1";
@@ -1542,7 +1593,17 @@
 
     qs("cgRuleCheckBtn").addEventListener("click", function(){ checkInputDomain(); });
     qs("cgRuleSaveBtn").addEventListener("click", function(){ saveInputRule(); });
-    qs("cgRuleExportBtn").addEventListener("click", function(){ exportRulesPackage(); });
+    qs("cgRuleExportBtn").addEventListener("click", function(){
+  var fn = window.CookieGateExportRulesPackage || window.exportRulesPackage;
+  if(typeof fn === "function"){
+    fn();
+    return;
+  }
+  var statusEl = document.getElementById("cgRuleStatus");
+  if(statusEl){
+    statusEl.textContent = "Export unavailable: Domain Ops export function was not loaded.";
+  }
+});
   }
 
   function setStatus(text){
@@ -1876,11 +1937,17 @@
   });
 
   window.CookieGateDomainRules = {
-    normalizeDomain,
-    rules,
-    saveRules,
-    reachabilityCheck,
-    exportRulesPackage
+    normalizeDomain: normalizeDomain,
+    rules: rules,
+    saveRules: saveRules,
+    reachabilityCheck: reachabilityCheck,
+    exportRulesPackage: (window.CookieGateExportRulesPackage || window.exportRulesPackage || function(){
+      var statusEl = document.getElementById("cgRuleStatus");
+      if(statusEl){
+        statusEl.textContent = "Export unavailable: Domain Ops export function was not loaded.";
+      }
+      return null;
+    })
   };
 })();
 
@@ -3879,7 +3946,7 @@
     btn.className = "cg-options-gear-btn";
     btn.title = "CookieGate options";
     btn.setAttribute("aria-label", "Open CookieGate options");
-    btn.textContent = "⚙";
+    btn.textContent = "âš™";
 
     btn.addEventListener("click", function(ev){
       ev.preventDefault();
@@ -4729,7 +4796,7 @@
       }
     }
 
-    badge.textContent = "Domain rule active: " + rule.root + " → " + rule.mode;
+    badge.textContent = "Domain rule active: " + rule.root + " â†’ " + rule.mode;
   }
 
   async function resolve(){
@@ -5366,7 +5433,7 @@
     await saveRules(upsertRule(rules, rule));
 
     input.value = "";
-    flash(panel, "Saved and activated: " + root + " → " + mode + " (locked by Domain Ops)", true);
+    flash(panel, "Saved and activated: " + root + " â†’ " + mode + " (locked by Domain Ops)", true);
     markButtonsGreen(["save rule"]);
 
     renderRuleList();
@@ -5649,7 +5716,7 @@
       panel.insertBefore(note, panel.firstChild);
     }
 
-    note.textContent = "Currently running in " + rule.mode + " mode — locked by Domain Ops rule " + rule.root + ". Change or unlock it in Domain Ops.";
+    note.textContent = "Currently running in " + rule.mode + " mode â€” locked by Domain Ops rule " + rule.root + ". Change or unlock it in Domain Ops.";
   }
 
   async function applyCurrentLock(){
@@ -6017,7 +6084,7 @@
     input.value = "";
     input.placeholder = "Add another domain or URL";
 
-    status("Saved and activated: " + root + " → " + rule.mode + " / locked", true);
+    status("Saved and activated: " + root + " â†’ " + rule.mode + " / locked", true);
 
     await renderRulesCollapsed();
     await applyCurrentLock();
@@ -6259,7 +6326,7 @@
       panel.insertBefore(note, panel.firstChild);
     }
 
-    note.textContent = "Currently running in " + (rule.mode || "Strict") + " mode — locked by Domain Ops rule " + rule.root + ". Change or unlock it in Domain Ops.";
+    note.textContent = "Currently running in " + (rule.mode || "Strict") + " mode â€” locked by Domain Ops rule " + rule.root + ". Change or unlock it in Domain Ops.";
 
     if(rule.locked){
       Array.prototype.slice.call(panel.querySelectorAll("select")).forEach(function(sel){
@@ -6576,3 +6643,124 @@
     canonicalize: canonicalize
   };
 })();
+
+// COOKIEGATE_V012_PUBLIC_UI_RESTORE
+(function(){
+  "use strict";
+
+  function cgText(n){
+    return (n && n.textContent ? String(n.textContent).trim() : "");
+  }
+
+  function cgSetExact(oldText, newText){
+    var nodes = document.querySelectorAll("button,h1,h2,h3,h4,summary,span,div,label");
+    nodes.forEach(function(n){
+      try {
+        if(cgText(n) === oldText){
+          n.textContent = newText;
+        }
+      } catch(e){}
+    });
+  }
+
+  function cgSetIncludes(oldText, newText){
+    var nodes = document.querySelectorAll("button,h1,h2,h3,h4,summary,span,div,label");
+    nodes.forEach(function(n){
+      try {
+        if(cgText(n).indexOf(oldText) >= 0 && cgText(n).length <= 80){
+          n.textContent = cgText(n).replace(oldText, newText);
+        }
+      } catch(e){}
+    });
+  }
+
+  function cgPatchPlaceholders(){
+    try {
+      var inputs = document.querySelectorAll("input[placeholder]");
+      inputs.forEach(function(i){
+        if(String(i.getAttribute("placeholder") || "").trim() === "example.com"){
+          i.setAttribute("placeholder", "Enter a domain like example.com");
+        }
+      });
+    } catch(e){}
+  }
+
+  function cgBridgeObserverDonut(){
+    try {
+      if(typeof window.CookieGateRenderBrowserObserverV3 === "function"){
+        window.renderBrowserObserver = function(data){
+          try {
+            return window.CookieGateRenderBrowserObserverV3(data || {});
+          } catch(e){}
+        };
+      }
+    } catch(e){}
+  }
+
+  function cgRestoreVisibleNaming(){
+    cgSetExact("Domain Rules", "Domain Ops");
+    cgSetExact("Domain Registry Governance", "Domain Ops");
+    cgSetIncludes("Domain Rules", "Domain Ops");
+    cgPatchPlaceholders();
+
+    try {
+      var cards = document.querySelectorAll(".cg-domain-rules-card,.cg-domain-tools-card,[data-cg-domain-rule-effective]");
+      cards.forEach(function(card){
+        card.setAttribute("data-cg-domain-ops-restored", "true");
+      });
+    } catch(e){}
+  }
+
+  function cgRestoreObserverVisual(){
+    cgBridgeObserverDonut();
+
+    try {
+      if(
+        typeof window.CookieGateRenderBrowserObserverV3 === "function" &&
+        window.CookieGateBrowserObserverLast &&
+        window.CookieGateBrowserObserverLast.analysis
+      ){
+        window.CookieGateRenderBrowserObserverV3(window.CookieGateBrowserObserverLast.analysis);
+      }
+    } catch(e){}
+  }
+
+  function cgRestoreAll(){
+    cgRestoreVisibleNaming();
+    cgRestoreObserverVisual();
+  }
+
+  var previousHook = window.CookieGateTransparencyRenderHook;
+  window.CookieGateTransparencyRenderHook = function(){
+    try {
+      if(typeof previousHook === "function"){
+        previousHook();
+      }
+    } catch(e){}
+    try {
+      cgRestoreAll();
+    } catch(e){}
+  };
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", cgRestoreAll);
+  } else {
+    cgRestoreAll();
+  }
+
+  try {
+    var mo = new MutationObserver(function(){
+      cgRestoreAll();
+    });
+    mo.observe(document.documentElement || document.body, { childList:true, subtree:true });
+    setTimeout(function(){ try { mo.disconnect(); } catch(e){} }, 8000);
+  } catch(e){}
+
+  window.CookieGateV012PublicUiRestore = {
+    marker: "COOKIEGATE_V012_PUBLIC_UI_RESTORE",
+    restore: cgRestoreAll
+  };
+})();
+
+
+

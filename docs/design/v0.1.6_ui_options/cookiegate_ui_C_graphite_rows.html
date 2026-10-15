@@ -1,0 +1,235 @@
+<!doctype html><html><head><meta charset="utf-8"><title>CookieGate — Option C (Graphite &amp; compact)</title>
+<style>
+:root{--bg:#0f1115;--p:#171a21;--p2:#20242e;--line:#2a2f3a;--text:#e8eaed;--muted:#8b929e;--acc:#2dd4bf;--red:#f87171;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:#07080b;color:var(--text);font-family:Inter,'Segoe UI',system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;padding:18px}
+.cap{font-size:11px;color:var(--muted);margin-bottom:8px;letter-spacing:.3px}
+.mono{font-family:ui-monospace,'Cascadia Code',Consolas,monospace}
+.app{width:380px;height:600px;background:var(--bg);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;overflow:hidden}
+.top{display:flex;align-items:center;gap:9px;padding:11px 14px 0}
+.logo{width:24px;height:24px;border-radius:7px;background:linear-gradient(135deg,#2dd4bf,#3b82f6);display:grid;place-items:center;font-weight:900;color:#06201c;font-size:12px;flex:none}
+.host{font-size:12px;color:var(--muted);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.host b{color:var(--text)}
+.ok{font-size:10px;color:var(--acc);border:1px solid rgba(45,212,191,.35);border-radius:4px;padding:2px 6px;font-weight:700}
+.tabs{display:flex;gap:3px;margin:10px 14px 0;background:var(--p);border:1px solid var(--line);border-radius:9px;padding:3px;flex:none}
+.tabs button{flex:1;height:28px;border:0;border-radius:6px;background:transparent;color:var(--muted);font-size:11.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px}
+.tabs button:hover{color:var(--text)}
+.tabs button.on{background:rgba(45,212,191,.14);color:var(--acc)}
+.tabs svg{width:13px;height:13px}
+/* scroll only when needed, and the bar stays invisible unless you hover a scrolling view */
+.main{flex:1;overflow-y:auto;padding:10px 14px 12px;}
+
+
+.verdict{font-size:19px;font-weight:800;margin:2px 0 1px;letter-spacing:-.3px}.verdict span{color:var(--acc)}
+.vsub{font-size:11.5px;color:var(--muted);line-height:1.4}
+.chips{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:9px 0}
+.chip{background:var(--p);border:1px solid var(--line);border-radius:8px;padding:6px 9px}
+.chip .v{font-size:17px;font-weight:700}.chip .k{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+.chip.go .v{color:#fbbf24}.chip.stay .v{color:#34d399}
+.filter{display:flex;align-items:center;gap:8px;background:var(--p);border:1px solid var(--line);border-radius:8px;padding:0 10px;height:30px}
+.filter span{color:var(--muted);font-size:12px}
+.filter input{flex:1;background:transparent;border:0;outline:none;color:var(--text);font-size:12px}
+.r{background:var(--p);border:1px solid var(--line);border-radius:9px;margin-top:5px;overflow:hidden}
+.rh{display:grid;grid-template-columns:84px 1fr 24px 48px 10px;align-items:center;gap:8px;padding:0 10px;height:34px;cursor:pointer}
+.rh:hover{background:var(--p2)}
+.rn{font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap}.rn i{width:8px;height:8px;border-radius:2px;flex:none}
+.track{height:7px;background:var(--p2);border-radius:4px;overflow:hidden}.track i{display:block;height:100%;border-radius:4px;transition:width .25s,opacity .2s}
+.rc{font-size:12px;text-align:right}
+.tag{font-size:9px;font-weight:800;text-align:center;border-radius:4px;padding:3px 0;letter-spacing:.04em}
+.tag.rm{color:#fbbf24;background:rgba(251,191,36,.12)}.tag.kp{color:#34d399;background:rgba(52,211,153,.12)}
+.ar{color:var(--muted);font-size:9px;transition:.2s}.r.open .ar{transform:rotate(180deg)}
+.rb{display:none;border-top:1px solid var(--line);padding:4px 10px 8px;max-height:160px;overflow-y:auto;}.r.open .rb{display:block}
+.ck{display:flex;justify-content:space-between;gap:8px;font-size:11px;padding:6px 2px;border-bottom:1px solid #222733;cursor:help}
+.ck .d{color:var(--muted);font-size:10px;white-space:nowrap}
+.lbtns{display:flex;gap:6px;margin-top:6px}
+.more{flex:1;border:1px dashed var(--line);background:transparent;border-radius:7px;padding:5px;font-size:11px;color:var(--muted);cursor:pointer}
+.more:hover{color:var(--acc);border-color:rgba(45,212,191,.5)}
+.empty{font-size:12px;color:var(--muted);padding:12px;text-align:center}
+.sec{font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:12px 0 4px;display:flex;justify-content:space-between;align-items:center}
+.sec a{color:var(--acc);text-transform:none;letter-spacing:0;cursor:pointer;font-size:11px}
+.slider{position:relative;height:28px;margin:2px 10px 0}
+.slider .line{position:absolute;top:12px;left:0;right:0;height:4px;background:var(--p2);border-radius:2px}
+.slider .fill{position:absolute;top:12px;left:0;height:4px;background:var(--acc);border-radius:2px;transition:width .2s}
+.slider button{position:absolute;top:4px;width:20px;height:20px;margin-left:-10px;border-radius:50%;border:2px solid #3a4150;background:var(--bg);cursor:pointer;transition:.2s}
+.slider button.on{border-color:var(--acc);background:var(--acc);box-shadow:0 0 0 5px rgba(45,212,191,.17)}
+.slabels{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin:0 0 6px}
+.slabels span{cursor:pointer;width:33%}.slabels span:nth-child(2){text-align:center}.slabels span:nth-child(3){text-align:right}
+.slabels span.on{color:var(--text);font-weight:700}
+.mdesc{font-size:11.5px;color:var(--muted);background:var(--p);border:1px solid var(--line);border-radius:8px;padding:8px 10px;line-height:1.4}.mdesc b{color:var(--text)}
+.acts{display:grid;grid-template-columns:1.6fr 1fr;gap:8px;margin-top:10px}
+.b{border:0;border-radius:8px;height:38px;font-weight:700;font-size:13px;cursor:pointer}
+.b.go{background:var(--acc);color:#04211d}.b.go:disabled{background:#2a3a3a;color:#5d6b6b;cursor:default}
+.b.wipe{background:transparent;border:1px solid rgba(248,113,113,.45);color:var(--red)}
+.b.alt{background:var(--p);border:1px solid var(--line);color:var(--text)}
+.toast{display:none;margin-top:8px;font-size:12px;padding:8px 10px;border-radius:8px;background:rgba(45,212,191,.1);border:1px solid rgba(45,212,191,.35);color:#a7f3e7}
+.toast.show{display:block}.toast.warn{background:rgba(248,113,113,.1);border-color:rgba(248,113,113,.4);color:#fecaca}
+.stack{display:flex;gap:2px;height:14px;margin:10px 0 4px}.stack i{display:block;height:100%;border-radius:3px;cursor:help}
+.stack i:hover{filter:brightness(1.25)}
+.srow{display:grid;grid-template-columns:1fr 70px 30px;align-items:center;gap:8px;height:28px;font-size:12px;cursor:help;border-bottom:1px solid #222733}
+.srow .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.srow .t{height:5px;background:var(--p2);border-radius:3px;overflow:hidden}.srow .t i{display:block;height:100%;background:#3b82f6}
+.srow .c{text-align:right;color:var(--muted)}
+.in{width:100%;background:var(--p);border:1px solid var(--line);border-radius:8px;color:var(--text);padding:9px 10px;font-size:12.5px;outline:none}
+.in:focus{border-color:var(--acc)}
+.arrow{font-size:12px;color:var(--muted);margin-top:7px}.arrow b{color:var(--acc)}
+.tg{display:flex;align-items:center;gap:9px;font-size:12px;margin-top:10px;cursor:pointer}
+.tg input{display:none}.tg .t{width:32px;height:18px;border-radius:9px;background:#3a4150;position:relative;flex:none;transition:.2s}
+.tg .t:after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#cbd5e1;transition:.2s}
+.tg input:checked+.t{background:var(--red)}.tg input:checked+.t:after{left:16px;background:#fff}
+.box{background:var(--p);border:1px solid var(--line);border-radius:9px;padding:10px;margin-top:10px;font-size:12px;line-height:1.5}
+.box .s{color:#34d399}.box .g{color:#fbbf24}
+.seg{display:flex;gap:4px;margin-top:6px}.seg button{flex:1;height:30px;border-radius:7px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:11.5px;font-weight:700;cursor:pointer}
+.seg button.on{border-color:var(--acc);color:var(--acc);background:rgba(45,212,191,.08)}
+.hide{display:none!important}
+#tip{position:fixed;z-index:99;pointer-events:none;max-width:270px;background:#0b0d11;border:1px solid rgba(45,212,191,.45);border-radius:9px;padding:10px 11px;font-size:11.5px;line-height:1.45;color:#d6dae0;box-shadow:0 12px 30px rgba(0,0,0,.6);display:none}
+#tip h4{margin:0 0 4px;font-size:12.5px;color:#fff;display:flex;justify-content:space-between;gap:8px}
+#tip .k{color:var(--muted)}#tip code{font-family:ui-monospace,Consolas,monospace;color:var(--acc)}
+#tip .tgl{font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px}
+#tip .tgl.rm{color:#fbbf24;background:rgba(251,191,36,.14)}#tip .tgl.kp{color:#34d399;background:rgba(52,211,153,.14)}
+#tip hr{border:0;border-top:1px solid var(--line);margin:6px 0}
+/* invisible scroll bars everywhere (still scrollable) */
+*{scrollbar-width:none!important;-ms-overflow-style:none}
+*::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
+</style></head>
+<body>
+<div class="cap">OPTION C — graphite &amp; compact · top tabs · verdict + inline bars · mode slider</div>
+<div id="tip"></div>
+<div class="app">
+  <div class="top"><div class="logo">C</div><div class="host mono"><b id="hostName">cnn.com</b> · <span id="hostSub">active site</span></div><span class="ok" id="hostTag">LIVE</span></div>
+  <nav class="tabs">
+    <button class="on" data-v="vSite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>This site</button>
+    <button data-v="vBrowser"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg>Browser</button>
+    <button data-v="vDomains"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.3-4.3"/></svg>Domains</button>
+  </nav>
+
+  <div class="main" id="vSite">
+    <div class="verdict"><span id="cRem"></span> cookies can go.</div>
+    <div class="vsub" id="cVsub"></div>
+    <div class="chips">
+      <div class="chip"><div class="v mono" id="cTot"></div><div class="k">Found</div></div>
+      <div class="chip go"><div class="v mono" id="cGo"></div><div class="k">Will go</div></div>
+      <div class="chip stay"><div class="v mono" id="cStay"></div><div class="k">Will stay</div></div>
+    </div>
+    <div class="filter"><span class="mono">⌕</span><input id="cQ" placeholder="filter: name, domain or vendor"></div>
+    <div id="cRows"></div>
+    <div class="sec"><span>Cleanup mode</span><a id="cScope">This site ▾</a></div>
+    <div class="slider" id="cSlider"><div class="line"></div><div class="fill" id="cFill"></div>
+      <button data-m="trusted" style="left:0%" aria-label="Trusted"></button><button data-m="balanced" style="left:50%" aria-label="Balanced"></button><button data-m="strict" style="left:100%" aria-label="Strict"></button></div>
+    <div class="slabels" id="cLabels"><span data-m="trusted">Trusted</span><span data-m="balanced">Balanced</span><span data-m="strict">Strict</span></div>
+    <div class="mdesc" id="cDesc"></div>
+    <div class="acts"><button class="b go" id="cClean"></button><button class="b wipe" id="cWipe">Wipe all</button></div>
+    <div class="toast" id="cToast"></div>
+  </div>
+
+  <div class="main hide" id="vBrowser">
+    <div class="verdict"><span>930</span> cookies across 244 sites.</div>
+    <div class="vsub">Hover any segment or row to see what CookieGate found and where.</div>
+    <div class="stack" id="oStack"></div>
+    <div id="oRows"></div>
+    <div class="sec"><span>Top sites</span><a id="oMore"></a></div>
+    <div id="oSites"></div>
+    <div class="vsub" id="oNote" style="margin-top:6px"></div>
+    <div class="acts"><button class="b go">Scan browser</button><button class="b alt">JSON ↓</button></div>
+  </div>
+
+  <div class="main hide" id="vDomains">
+    <div class="verdict" style="font-size:17px">Inspect any domain.</div>
+    <div class="vsub">Without opening it. Paths and subdomains fold into the root.</div>
+    <div style="margin-top:10px"><input class="in mono" id="dIn" value="https://www.cnn.com/section/politics"></div>
+    <div class="arrow mono">→ checks <b id="dRoot">cnn.com</b> + subdomains</div>
+    <label class="tg"><input type="checkbox" id="dAuth"><span class="t"></span>Include login cookies</label>
+    <div class="acts"><button class="b go" id="dGo">Inspect</button><button class="b wipe">Wipe domain</button></div>
+    <div class="box" id="dRes"></div>
+    <div class="sec"><span>Remember mode for this domain</span></div>
+    <div class="seg" id="dSeg"><button>Trusted</button><button>Balanced</button><button class="on">Strict</button></div>
+    <div class="acts"><button class="b go">Save rule</button><button class="b alt">Export</button></div>
+  </div>
+</div>
+
+<script>
+/* ===== shared core (same data/logic in every option) ===== */
+var ORDER=['auth','trk','pref','unk'];
+var NAME={auth:'Auth/session',trk:'Tracking',pref:'Preferences',unk:'Unknown'};
+var WHY={auth:'Name matches a session / sign-in token pattern. Kept so you stay logged in.',trk:'Matches a known analytics or advertising tracker signature.',pref:'Stores a site setting (region, language, consent choice).',unk:'No known pattern matched — flagged for review rather than trusted.'};
+var SEED=[['auth','sendAuthToken','.cnn.com','CNN sign-in'],['auth','sendAuthToken2','.cnn.com','CNN sign-in'],['auth','isInAuthTokenExperiment','.cnn.com','CNN sign-in'],['auth','optimizelySession','.cnn.com','Optimizely session'],['auth','resolveAuthTimestamp','.cnn.com','CNN sign-in'],['auth','WMUKID_STABLE','.cnn.com','WarnerMedia ID'],
+['trk','_ga','.cnn.com','Google Analytics'],['trk','_ga_XJ4T','.cnn.com','Google Analytics'],['trk','_gid','.cnn.com','Google Analytics'],['trk','_gcl_au','.cnn.com','Google Ads'],['trk','_fbp','.cnn.com','Meta Pixel'],['trk','fr','.cnn.com','Meta Pixel'],['trk','s_ecid','.cnn.com','Adobe Experience Cloud'],['trk','AMCV_7FF8','.cnn.com','Adobe Experience Cloud'],['trk','AMCVS_7FF8','.cnn.com','Adobe Experience Cloud'],['trk','s_cc','.cnn.com','Adobe Analytics'],['trk','s_sq','.cnn.com','Adobe Analytics'],['trk','_cb','.cnn.com','Chartbeat'],['trk','_cb_svref','.cnn.com','Chartbeat'],['trk','_chartbeat2','.cnn.com','Chartbeat'],['trk','_v__chartbeat3','.cnn.com','Chartbeat'],['trk','_pcid','.cnn.com','Piano'],['trk','_pctx','.cnn.com','Piano'],['trk','cX_P','.cnn.com','Piano Cxense'],['trk','cX_G','.cnn.com','Piano Cxense'],['trk','sp','collector.cdp.cnn.com','Snowplow'],['trk','_sp_ses.f5fb','.cnn.com','Snowplow'],['trk','_sp_id.f5fb','.cnn.com','Snowplow'],
+['pref','countryCode','.cnn.com','CNN region'],['pref','stateCode','.cnn.com','CNN region'],['pref','OptanonAlertBoxClosed','.cnn.com','OneTrust consent choice'],
+['unk','wbdLTP','.cnn.com',''],['unk','datid','.cnn.com',''],['unk','CDPID','.cnn.com',''],['unk','sendWMSegs','.cnn.com',''],['unk','FastAB','.cnn.com',''],['unk','FastAB_Zion','.cnn.com',''],['unk','umto','www.cnn.com',''],['unk','sato','.cnn.com',''],['unk','psmPageLoadId','.cnn.com',''],['unk','g_state','www.cnn.com',''],['unk','SecGpc','.cnn.com',''],['unk','usprivacy','.cnn.com',''],['unk','__idcontext','.cnn.com',''],['unk','wbdFch','.www.cnn.com',''],['unk','nexus-web-app-id','www.cnn.com',''],['unk','_pc_may_test_group','www.cnn.com','']];
+var cookies=SEED.map(function(r){return {cat:r[0],name:r[1],domain:r[2],vendor:r[3]};});
+var counts={};ORDER.forEach(function(k){counts[k]=cookies.filter(function(c){return c.cat===k;}).length;});
+var REMOVE={strict:['trk','unk','pref'],balanced:['trk','unk'],trusted:['trk']};
+var MODES=[{k:'strict',t:'Strict',d:'Removes trackers, unknown and preference cookies. Keeps your logins.'},{k:'balanced',t:'Balanced',d:'Removes trackers and unknown cookies. Keeps preferences and logins.'},{k:'trusted',t:'Trusted',d:'Removes only known trackers. Keeps everything else.'}];
+var mode='strict';
+var SITES=[['cnn.com',64,'Tracking-heavy: Adobe, Chartbeat, Piano'],['dickssportinggoods.com',52,'Retail analytics + ad pixels'],['ebay.com',27,'Session + personalization'],['nike.com',27,'Ad pixels + session'],['google.com',24,'Account + preferences'],['bbc.com',22,'Analytics + consent'],['chatgpt.com',19,'Session + auth'],['claude.ai',16,'Session + auth'],['omio.com',16,'Booking session + ads'],['youtube.com',16,'Preferences + ads']];
+var OBS={auth:[64,'chatgpt.com, claude.ai, google.com'],trk:[437,'cnn.com, dickssportinggoods.com, nike.com'],pref:[28,'youtube.com, google.com, bbc.com'],unk:[401,'cnn.com, ebay.com, omio.com']};
+function $(id){return document.getElementById(id);}
+function isRem(k){return REMOVE[mode].indexOf(k)>=0;}
+function remCount(){var n=0;ORDER.forEach(function(k){if(isRem(k))n+=counts[k];});return n;}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+var tip=$('tip');
+function moveTip(ev){if(!ev)return;var w=tip.offsetWidth,h=tip.offsetHeight,x=ev.clientX+14,y=ev.clientY+14;if(x+w>innerWidth-8)x=ev.clientX-w-14;if(y+h>innerHeight-8)y=ev.clientY-h-14;tip.style.left=Math.max(8,x)+'px';tip.style.top=Math.max(8,y)+'px';}
+function showTip(html,ev){tip.innerHTML=html;tip.style.display='block';moveTip(ev);}
+function hideTip(){tip.style.display='none';}
+function bindTip(el,fn){el.addEventListener('mouseenter',function(e){showTip(fn(),e);});el.addEventListener('mousemove',moveTip);el.addEventListener('mouseleave',hideTip);el.setAttribute('tabindex','0');el.addEventListener('focus',function(){var r=el.getBoundingClientRect();showTip(fn(),{clientX:r.left,clientY:r.bottom});});el.addEventListener('blur',hideTip);}
+function tally(list,key){var m={};list.forEach(function(c){var v=c[key]||'(no vendor match)';m[v]=(m[v]||0)+1;});return Object.keys(m).sort(function(a,b){return m[b]-m[a];}).map(function(k){return k+' ('+m[k]+')';});}
+function catTip(k){var list=cookies.filter(function(c){return c.cat===k;}),pct=Math.round(list.length/cookies.length*100),rm=isRem(k);
+ var ex=list.slice(0,5).map(function(c){return '<code>'+esc(c.name)+'</code>';}).join(', ')+(list.length>5?', +'+(list.length-5)+' more':'');
+ return '<h4><span>'+NAME[k]+' · '+list.length+' ('+pct+'%)</span><span class="tgl '+(rm?'rm':'kp')+'">'+(rm?'REMOVE':'KEEP')+'</span></h4><div><span class="k">Why:</span> '+WHY[k]+'</div>'+(k!=='unk'?'<div><span class="k">Sources:</span> '+esc(tally(list,'vendor').slice(0,4).join(', '))+'</div>':'')+'<div><span class="k">Domains:</span> '+esc(tally(list,'domain').slice(0,3).join(', '))+'</div><hr><div><span class="k">Cookies:</span> '+ex+'</div><div class="k" style="margin-top:4px">Under '+cap(mode)+': '+(rm?'removed when you clean.':'kept.')+'</div>';}
+function cookieTip(c){var rm=isRem(c.cat);return '<h4><span><code>'+esc(c.name)+'</code></span><span class="tgl '+(rm?'rm':'kp')+'">'+(rm?'REMOVE':'KEEP')+'</span></h4><div><span class="k">Domain:</span> '+esc(c.domain)+'</div><div><span class="k">Category:</span> '+NAME[c.cat]+'</div>'+(c.vendor?'<div><span class="k">Source:</span> '+esc(c.vendor)+'</div>':'')+'<div><span class="k">Why:</span> '+WHY[c.cat]+'</div><div class="k" style="margin-top:4px">Value: hash preview only — the raw value is never shown.</div>';}
+function obsTip(k){var tot=0;ORDER.forEach(function(x){tot+=OBS[x][0];});return '<h4><span>'+NAME[k]+' · '+OBS[k][0]+' cookies</span><span>'+Math.round(OBS[k][0]/tot*100)+'%</span></h4><div><span class="k">Why:</span> '+WHY[k]+'</div><div><span class="k">Most from:</span> '+OBS[k][1]+'</div>';}
+function siteTip(s){return '<h4><span>'+s[0]+'</span><span>'+s[1]+' cookies</span></h4><div><span class="k">What CookieGate sees:</span> '+s[2]+'</div><div class="k" style="margin-top:4px">Use Domains to inspect or wipe this site.</div>';}
+function segWidths(vals,minPct){var tot=vals.reduce(function(a,b){return a+b;},0);var raw=vals.map(function(v){return v/tot*100;});var small=raw.map(function(p){return p>0&&p<minPct;});var reserved=small.reduce(function(a,s){return a+(s?minPct:0);},0);var bigTot=raw.reduce(function(a,p,i){return a+(small[i]?0:p);},0);return raw.map(function(p,i){return p===0?0:(small[i]?minPct:p/bigTot*(100-reserved));});}
+function normRoot(v){return String(v||'').toLowerCase().trim().replace(/^https?:\/\//,'').split('/')[0].split('?')[0].split(':')[0].replace(/^www\./,'');}
+
+/* ===== Option C rendering ===== */
+var COL={auth:'#34d399',trk:'#f87171',pref:'#a78bfa',unk:'#fbbf24'};
+var openR={},lim={},q='',bwLim=5,scope='This site';
+var POS={trusted:0,balanced:50,strict:100};
+var HOST={vSite:['cnn.com','active site','LIVE'],vBrowser:['browser','all sites','API'],vDomains:['domain','lookup','TOOLS']};
+function match(c){return !q||(c.name+' '+c.domain+' '+c.vendor).toLowerCase().indexOf(q)>=0;}
+function renderSite(){hideTip();var rem=remCount(),tot=cookies.length;
+ $('cRem').textContent=rem;$('cTot').textContent=tot;$('cGo').textContent=rem;$('cStay').textContent=tot-rem;
+ var parts=ORDER.filter(isRem).map(function(k){return counts[k]+' '+NAME[k].toLowerCase();});
+ $('cVsub').textContent=(parts.length?parts.join(' · '):'nothing')+' — your '+counts.auth+' login cookies are untouched.';
+ var box=$('cRows');box.innerHTML='';
+ var w=segWidths(ORDER.map(function(k){return counts[k];}),8);var maxW=Math.max.apply(null,w);
+ ORDER.forEach(function(k,i){var list=cookies.filter(function(c){return c.cat===k&&match(c);});if(q&&!list.length)return;var rm=isRem(k);
+  var r=document.createElement('div');r.className='r'+((openR[k]||q)?' open':'');
+  r.innerHTML='<div class="rh"><span class="rn"><i style="background:'+COL[k]+'"></i>'+NAME[k]+'</span><span class="track"><i style="width:'+(w[i]/maxW*100)+'%;background:'+COL[k]+';opacity:'+(rm?1:0.4)+'"></i></span><span class="rc mono">'+list.length+'</span><span class="tag '+(rm?'rm':'kp')+'">'+(rm?'REMOVE':'KEEP')+'</span><span class="ar">▼</span></div><div class="rb"></div>';
+  var rh=r.querySelector('.rh');bindTip(rh,function(){return catTip(k);});rh.onclick=function(){openR[k]=!openR[k];renderSite();};
+  var rb=r.querySelector('.rb');var n=lim[k]||6;
+  list.slice(0,n).forEach(function(c){var e=document.createElement('div');e.className='ck';e.innerHTML='<span class="mono">'+esc(c.name)+'</span><span class="d mono">'+esc(c.domain)+'</span>';bindTip(e,function(){return cookieTip(c);});rb.appendChild(e);});
+  if(list.length>n||n>6){var wrap=document.createElement('div');wrap.className='lbtns';
+   if(list.length>n){var b=document.createElement('button');b.className='more';b.textContent='+'+Math.min(10,list.length-n)+' more ('+(list.length-n)+' left)';b.onclick=function(ev){ev.stopPropagation();lim[k]=n+10;renderSite();};wrap.appendChild(b);}
+   if(n>6){var f=document.createElement('button');f.className='more';f.textContent='show fewer';f.onclick=function(ev){ev.stopPropagation();lim[k]=6;renderSite();};wrap.appendChild(f);}
+   rb.appendChild(wrap);}
+  box.appendChild(r);});
+ if(!box.children.length)box.innerHTML='<div class="empty">no matches for “'+esc(q)+'”</div>';
+ $('cFill').style.width=POS[mode]+'%';
+ document.querySelectorAll('#cSlider button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-m')===mode);});
+ document.querySelectorAll('#cLabels span').forEach(function(s){s.classList.toggle('on',s.getAttribute('data-m')===mode);});
+ var m=MODES.filter(function(x){return x.k===mode;})[0];$('cDesc').innerHTML='<b>'+m.t+'</b> — '+m.d+' <span style="color:#5f6775">('+scope.toLowerCase()+')</span>';
+ var cl=$('cClean');cl.textContent=rem?('Clean '+rem+' cookies'):'Nothing to clean';cl.disabled=!rem;}
+function setMode(m){mode=m;$('cToast').className='toast';renderSite();}
+function renderBrowser(){hideTip();var vals=ORDER.map(function(k){return OBS[k][0];});var w=segWidths(vals,6);
+ var st=$('oStack');st.innerHTML='';ORDER.forEach(function(k,i){var s=document.createElement('i');s.style.width=w[i]+'%';s.style.background=COL[k];bindTip(s,function(){return obsTip(k);});st.appendChild(s);});
+ var rows=$('oRows');rows.innerHTML='';var mx=Math.max.apply(null,w);
+ ORDER.forEach(function(k,i){var r=document.createElement('div');r.className='r';r.innerHTML='<div class="rh" style="grid-template-columns:84px 1fr 40px;cursor:help"><span class="rn"><i style="background:'+COL[k]+'"></i>'+NAME[k]+'</span><span class="track"><i style="width:'+(w[i]/mx*100)+'%;background:'+COL[k]+'"></i></span><span class="rc mono">'+OBS[k][0]+'</span></div>';bindTip(r.querySelector('.rh'),function(){return obsTip(k);});rows.appendChild(r);});
+ var s=$('oSites');s.innerHTML='';var max=SITES[0][1];SITES.slice(0,bwLim).forEach(function(x){var r=document.createElement('div');r.className='srow';r.innerHTML='<span class="n mono">'+x[0]+'</span><span class="t"><i style="width:'+(x[1]/max*100)+'%"></i></span><span class="c mono">'+x[1]+'</span>';bindTip(r,function(){return siteTip(x);});s.appendChild(r);});
+ var expanded=bwLim>=SITES.length;$('oMore').textContent=expanded?'show less ▴':'show more ▾';
+ $('oNote').textContent=expanded?'Full list of all 244 sites is in the JSON export.':'';}
+function renderDomain(){var r=normRoot($('dIn').value)||'—';$('dRoot').textContent=r;var inc=$('dAuth').checked,tot=78,auth=10;
+ $('dRes').innerHTML='<span class="mono">'+tot+'</span> cookies on <b>'+esc(r)+'</b><br>'+(inc?'<span class="g">all '+tot+' would go — including login cookies</span>':'<span class="s">'+auth+' login cookies protected</span> · <span class="g">'+(tot-auth)+' would go</span>');}
+$('cQ').oninput=function(e){q=e.target.value.toLowerCase().trim();renderSite();};
+document.querySelectorAll('#cSlider button, #cLabels span').forEach(function(b){b.onclick=function(){setMode(b.getAttribute('data-m'));};});
+$('cScope').onclick=function(){scope=scope==='This site'?'Every site':'This site';$('cScope').textContent=scope+' ▾';renderSite();};
+$('cClean').onclick=function(){var t=$('cToast');t.className='toast show';t.textContent='cleaned '+remCount()+' cookies on cnn.com · '+(cookies.length-remCount())+' kept incl. '+counts.auth+' logins (prototype — nothing deleted)';};
+$('cWipe').onclick=function(){var t=$('cToast');t.className='toast warn show';t.textContent='wipe all removes all '+cookies.length+' cookies incl. '+counts.auth+' logins — confirm step first (prototype)';};
+$('oMore').onclick=function(){bwLim=bwLim>=SITES.length?5:SITES.length;renderBrowser();};
+$('dIn').oninput=renderDomain;$('dAuth').onchange=renderDomain;$('dGo').onclick=renderDomain;
+document.querySelectorAll('#dSeg button').forEach(function(b){b.onclick=function(){document.querySelectorAll('#dSeg button').forEach(function(x){x.classList.toggle('on',x===b);});};});
+document.querySelectorAll('.tabs button').forEach(function(b){b.onclick=function(){var v=b.getAttribute('data-v');['vSite','vBrowser','vDomains'].forEach(function(id){$(id).classList.toggle('hide',id!==v);});document.querySelectorAll('.tabs button').forEach(function(x){x.classList.toggle('on',x===b);});
+ $('hostName').textContent=HOST[v][0];$('hostSub').textContent=HOST[v][1];$('hostTag').textContent=HOST[v][2];hideTip();if(v==='vBrowser')renderBrowser();if(v==='vDomains')renderDomain();};});
+renderSite();
+</script>
+</body></html>

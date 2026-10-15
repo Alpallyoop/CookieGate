@@ -3,7 +3,7 @@
 
   var api = null;
   if (typeof browser !== "undefined") api = browser;
-  if (typeof chrome !== "undefined") api = chrome;
+  else if (typeof chrome !== "undefined") api = chrome;
 
   function byId(id){ return document.getElementById(id); }
 

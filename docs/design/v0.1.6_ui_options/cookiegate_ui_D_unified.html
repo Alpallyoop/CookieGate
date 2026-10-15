@@ -1,0 +1,310 @@
+<!doctype html><html data-theme="light"><head><meta charset="utf-8"><title>CookieGate — Option D (unified)</title>
+<style>
+:root,[data-theme=light]{--frame:#e6e8ef;--bg:#f4f5f9;--card:#fff;--hover:#f7f8fb;--line:#e5e7eb;--text:#111827;--muted:#6b7280;--acc:#4f46e5;--accSoft:#eef2ff;--track:#e9ebf1;--switch:#d1d5db;--knob:#fff;--dashed:#d1d5db;--disabled:#c7cbd4;
+ --rmBg:#fff4e5;--rmFg:#b45309;--kpBg:#ecfdf5;--kpFg:#047857;--okBg:#ecfdf5;--okFg:#065f46;--okBd:#a7f3d0;--warnBg:#fef2f2;--warnFg:#991b1b;--warnBd:#fecaca;--danger:#dc2626;--live:#16a34a;
+ --tipBg:#111827;--tipFg:#f3f4f6;--tipMuted:#9ca3af;--tipBd:transparent;--shadow:0 12px 40px rgba(17,24,39,.16);color-scheme:light}
+[data-theme=dark]{--frame:#06070a;--bg:#0f1218;--card:#171b23;--hover:#1d222c;--line:#2a303b;--text:#eef0f4;--muted:#9aa3b2;--acc:#818cf8;--accSoft:rgba(129,140,248,.15);--track:#232833;--switch:#3a4150;--knob:#e5e7eb;--dashed:#3a4150;--disabled:#2f3542;
+ --rmBg:rgba(251,191,36,.14);--rmFg:#fbbf24;--kpBg:rgba(52,211,153,.13);--kpFg:#34d399;--okBg:rgba(52,211,153,.1);--okFg:#a7f3d0;--okBd:rgba(52,211,153,.35);--warnBg:rgba(248,113,113,.1);--warnFg:#fecaca;--warnBd:rgba(248,113,113,.4);--danger:#f87171;--live:#34d399;
+ --tipBg:#0b0d12;--tipFg:#e5e7eb;--tipMuted:#9aa3b2;--tipBd:#2a303b;--shadow:0 12px 40px rgba(0,0,0,.6);color-scheme:dark}
+*{box-sizing:border-box}
+*{scrollbar-width:none!important;-ms-overflow-style:none}*::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
+body{margin:0;background:var(--frame);font-family:-apple-system,'Segoe UI',Inter,system-ui,sans-serif;color:var(--text);display:flex;flex-direction:column;align-items:center;padding:18px;transition:background .25s}
+.cap{font-size:11px;color:var(--muted);margin-bottom:8px;letter-spacing:.3px}
+.app{width:380px;height:600px;background:var(--bg);border-radius:20px;box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden;transition:background .25s}
+.top{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--line)}
+.fav{width:32px;height:32px;border-radius:9px;color:#fff;font-weight:800;display:grid;place-items:center;font-size:12px;flex:none;text-transform:uppercase}
+.dom{font-weight:700;font-size:14px;display:flex;align-items:center;gap:7px}
+.theme{height:24px;border-radius:20px;border:1px solid var(--line);background:var(--bg);color:var(--muted);display:inline-flex;align-items:center;gap:4px;cursor:pointer;padding:0 8px 0 6px;font-size:10.5px;font-weight:700;font-family:inherit}
+.theme:hover{color:var(--acc);border-color:var(--acc)}.theme svg{width:13px;height:13px}
+.subt{font-size:11px;color:var(--muted)}
+.live{margin-left:auto;font-size:11px;color:var(--live);font-weight:700;display:flex;align-items:center;gap:5px}
+.live:before{content:'';width:7px;height:7px;border-radius:50%;background:var(--live)}
+.body{flex:1;overflow-y:auto;padding:12px 16px 12px;position:relative}
+/* search */
+.search{position:relative}
+.search input{width:100%;border:1px solid var(--line);background:var(--card);border-radius:11px;padding:10px 32px 10px 34px;font-size:12.5px;color:var(--text);outline:none}
+.search input:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--accSoft)}
+.search .ic{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--muted)}
+.search .x{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--muted);font-size:15px;cursor:pointer;display:none}
+.search.has .x{display:block}
+.back{display:flex;align-items:center;justify-content:space-between;margin-top:10px;background:var(--accSoft);color:var(--acc);border-radius:10px;padding:8px 10px;font-size:12px;font-weight:600}
+.back button{border:0;background:transparent;color:var(--acc);font-weight:700;font-size:12px;cursor:pointer}
+/* summary card (the section you liked) */
+.sum{margin-top:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.big{font-size:28px;font-weight:800;line-height:1}.big small{font-size:13px;color:var(--muted);font-weight:600}
+.sl{font-size:12px;color:var(--muted);margin-top:6px}.sl b.k{color:var(--kpFg)}.sl b.r{color:var(--rmFg)}
+.rule{display:inline-block;margin-left:4px;font-size:10px;font-weight:700;color:var(--acc);background:var(--accSoft);border-radius:10px;padding:1px 7px}
+.bar{display:flex;gap:2px;height:12px;margin-top:12px}
+.bar i{display:block;height:100%;border-radius:3px;cursor:help;transition:filter .15s,opacity .2s}
+.bar i:hover{filter:brightness(1.15);outline:2px solid var(--text);outline-offset:1px}
+.chips{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+.chip{display:flex;align-items:center;justify-content:space-between;gap:6px;height:32px;padding:0 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);font-size:11.5px;color:var(--muted);cursor:pointer}
+.chip:hover{border-color:var(--acc)}
+.chip.on{border-color:var(--acc);box-shadow:0 0 0 2px var(--accSoft)}
+.chip .l{display:flex;align-items:center;gap:6px;white-space:nowrap}.chip em{width:9px;height:9px;border-radius:3px;flex:none}.chip b{color:var(--text)}
+.st{font-size:9.5px;font-weight:800;width:48px;text-align:center;border-radius:5px;padding:2px 0;flex:none}
+.st.rm{background:var(--rmBg);color:var(--rmFg)}.st.kp{background:var(--kpBg);color:var(--kpFg)}
+.hint{font-size:10.5px;color:var(--muted);margin-top:8px;text-align:center}
+.drawer{margin-top:8px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px 10px 10px}
+.dh{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700;padding:4px 0 2px}
+.dh button{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:14px}
+.list{max-height:170px;overflow-y:auto}
+.ck{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11.5px;padding:7px 2px;border-bottom:1px dashed var(--line);cursor:help}
+.ck code{font-family:ui-monospace,Consolas,monospace}.ck .d{color:var(--muted);font-size:10.5px;white-space:nowrap}
+.ck.flash{background:var(--accSoft);border-radius:6px}
+.lbtns{display:flex;gap:6px;margin-top:7px}
+.more{flex:1;border:1px dashed var(--dashed);background:transparent;border-radius:8px;padding:6px;font-size:11px;color:var(--muted);cursor:pointer}
+.more:hover{color:var(--acc);border-color:var(--acc)}
+/* results (override view) */
+.res{margin-top:10px}
+.rg{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:10px 2px 6px}
+.srow{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:0 10px;height:40px;margin-bottom:6px;cursor:pointer}
+.srow:hover{border-color:var(--acc)}
+.srow .mini{width:22px;height:22px;border-radius:6px;color:#fff;font-size:10px;font-weight:800;display:grid;place-items:center;text-transform:uppercase}
+.srow .n{flex:1;font-size:12.5px;font-weight:600}.srow .c{font-size:11px;color:var(--muted)}.srow .go{color:var(--acc);font-weight:800}
+.rbox{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:2px 10px 6px}
+.empty{font-size:12px;color:var(--muted);text-align:center;padding:14px 6px;line-height:1.5}
+/* mode slider (from C) */
+.sec{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:16px 2px 4px}
+.slider{position:relative;height:30px;margin:2px 12px 0}
+.slider .line{position:absolute;top:13px;left:0;right:0;height:4px;background:var(--track);border-radius:2px}
+.slider .fill{position:absolute;top:13px;left:0;height:4px;background:var(--acc);border-radius:2px;transition:width .2s}
+.slider button{position:absolute;top:5px;width:20px;height:20px;margin-left:-10px;border-radius:50%;border:2px solid var(--switch);background:var(--card);cursor:pointer;transition:.2s;padding:0}
+.slider button.on{border-color:var(--acc);background:var(--acc);box-shadow:0 0 0 5px var(--accSoft)}
+.slabels{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin:0 0 6px}
+.slabels span{cursor:pointer;width:33%}.slabels span:nth-child(2){text-align:center}.slabels span:nth-child(3){text-align:right}
+.slabels span.on{color:var(--text);font-weight:700}
+.mdesc{font-size:12px;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 11px;line-height:1.45}.mdesc b{color:var(--text)}
+.sw{display:flex;align-items:center;gap:10px;font-size:12px;margin:10px 2px 2px;cursor:pointer}
+.sw input{display:none}.sw .t{width:34px;height:20px;border-radius:20px;background:var(--switch);position:relative;transition:.2s;flex:none}
+.sw .t:after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--knob);transition:.2s;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.sw input:checked+.t{background:var(--acc)}.sw input:checked+.t:after{left:16px;background:#fff}
+.toast{display:none;margin-top:10px;font-size:12px;padding:10px;border-radius:10px;background:var(--okBg);color:var(--okFg);border:1px solid var(--okBd)}
+.toast.show{display:block}.toast.warn{background:var(--warnBg);color:var(--warnFg);border-color:var(--warnBd)}
+.cta{padding:10px 16px 8px;background:var(--card);border-top:1px solid var(--line)}
+.cta .main{width:100%;border:0;background:var(--acc);color:#fff;font-weight:700;font-size:14px;padding:12px;border-radius:12px;cursor:pointer}
+.cta .main:disabled{background:var(--disabled);cursor:default}
+.cta .link{display:block;margin:6px auto 0;background:none;border:0;color:var(--danger);font-size:12px;font-weight:600;cursor:pointer}
+.tabs{display:flex;background:var(--card);border-top:1px solid var(--line)}
+.tabs button{flex:1;border:0;background:none;padding:8px 0 9px;font-size:10.5px;font-weight:600;color:var(--muted);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px}
+.tabs button.on{color:var(--acc)}.tabs svg{width:20px;height:20px}
+/* browser tab */
+.gauge{position:relative;width:170px;height:170px;margin:4px auto 0}
+.gauge svg{width:100%;height:100%;display:block}.gauge path:hover{filter:brightness(1.12) saturate(1.2)}
+.center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.num{font-size:34px;font-weight:800;line-height:1}.lbl{font-size:11.5px;color:var(--muted);margin-top:3px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:10px}
+.lrow{display:flex;align-items:center;gap:10px;height:32px;font-size:12.5px;cursor:help}
+.lrow .dot{width:10px;height:10px;border-radius:50%}.lrow .cn{flex:1;font-weight:600}
+.site{display:flex;align-items:center;gap:8px;height:32px;font-size:12px;cursor:pointer;border-radius:6px}
+.site:hover .n{color:var(--acc)}
+.site .n{width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.site .t{flex:1;height:6px;background:var(--track);border-radius:3px;overflow:hidden}.site .t i{display:block;height:100%;background:var(--acc);border-radius:3px}
+.site .c{width:26px;text-align:right;color:var(--muted)}
+.btns{display:flex;gap:8px;margin-top:10px}
+.btn{flex:1;border:0;border-radius:10px;padding:10px;font-weight:700;font-size:12.5px;cursor:pointer}
+.btn.p{background:var(--acc);color:#fff}.btn.g{background:var(--card);border:1px solid var(--line);color:var(--text)}
+.note{font-size:11px;color:var(--muted);margin-top:8px}
+.hide{display:none!important}
+#tip{position:fixed;z-index:99;pointer-events:none;max-width:270px;background:var(--tipBg);color:var(--tipFg);border:1px solid var(--tipBd);border-radius:10px;padding:10px 11px;font-size:11.5px;line-height:1.45;box-shadow:0 10px 30px rgba(0,0,0,.4);display:none}
+#tip h4{margin:0 0 4px;font-size:12.5px;color:#fff;display:flex;justify-content:space-between;gap:8px}
+#tip .k{color:var(--tipMuted)}#tip code{font-family:ui-monospace,Consolas,monospace;color:#c7d2fe}
+#tip .tg{font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px}
+#tip .tg.rm{background:#78350f;color:#fde68a}#tip .tg.kp{background:#064e3b;color:#a7f3d0}
+#tip hr{border:0;border-top:1px solid #374151;margin:6px 0}
+</style></head>
+<body>
+<div class="cap">OPTION D — unified: B's simplicity · your summary card · C's mode slider · search replaces Domains · ring only in Browser</div>
+<div id="tip"></div>
+<div class="app">
+  <div class="top">
+    <div class="fav" id="fav">C</div>
+    <div><div class="dom"><span id="domName">cnn.com</span><button class="theme" id="themeBtn"></button></div><div class="subt" id="topSub">Active site</div></div>
+    <span class="live">Live</span>
+  </div>
+
+  <div class="body" id="vSite">
+    <div class="search" id="searchWrap">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.3-4.3"/></svg>
+      <input id="q" placeholder="Search cookies, vendors or a domain (e.g. bbc.com)" autocomplete="off">
+      <button class="x" id="qx" title="Clear">×</button>
+    </div>
+    <div class="back hide" id="back"><span id="backTxt"></span><button id="backBtn">← Back to cnn.com</button></div>
+
+    <div id="results" class="res hide"></div>
+
+    <div id="siteContent">
+      <div class="sum">
+        <div class="big"><span id="sTot"></span> <small id="sOn"></small></div>
+        <div class="sl" id="sLine"></div>
+        <div class="bar" id="sBar"></div>
+        <div class="chips" id="sChips"></div>
+        <div class="hint" id="sHint">Tap a category to see its cookies · hover for details</div>
+      </div>
+      <div class="drawer hide" id="drawer"><div class="dh"><span id="dTitle"></span><button id="dClose" title="Close">×</button></div><div class="list" id="dList"></div></div>
+
+      <div class="sec">Cleanup mode</div>
+      <div class="slider" id="slider"><div class="line"></div><div class="fill" id="fill"></div>
+        <button data-m="trusted" style="left:0%" aria-label="Trusted"></button><button data-m="balanced" style="left:50%" aria-label="Balanced"></button><button data-m="strict" style="left:100%" aria-label="Strict"></button></div>
+      <div class="slabels" id="slabels"><span data-m="trusted">Trusted</span><span data-m="balanced">Balanced</span><span data-m="strict">Strict</span></div>
+      <div class="mdesc" id="mdesc"></div>
+      <label class="sw"><input type="checkbox" id="remember"><span class="t"></span><span id="rememberLbl"></span></label>
+      <div class="toast" id="toast"></div>
+    </div>
+  </div>
+
+  <div class="body hide" id="vBrowser">
+    <div class="gauge"><svg id="ring" viewBox="0 0 120 120"></svg><div class="center"><div class="num">930</div><div class="lbl">cookies · 244 sites</div></div></div>
+    <div class="card" id="oCats"></div>
+    <div class="sec">Sites with the most cookies <span style="text-transform:none;letter-spacing:0">· tap to open</span></div>
+    <div class="card"><div id="oSites"></div><div class="lbtns"><button class="more" id="oMore"></button></div><div class="note" id="oNote"></div></div>
+    <div class="btns"><button class="btn p">Scan browser</button><button class="btn g">Download JSON</button></div>
+    <div class="note">Read with the extension cookie API. Exports use hash previews — never raw values.</div>
+  </div>
+
+  <div class="cta" id="cta"><button class="main" id="clean"></button><button class="link" id="wipe"></button></div>
+  <nav class="tabs">
+    <button class="on" data-v="vSite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>This site</button>
+    <button data-v="vBrowser"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg>Browser</button>
+  </nav>
+</div>
+
+<script>
+/* ===== data ===== */
+var ORDER=['auth','trk','pref','unk'];
+var NAME={auth:'Auth/session',trk:'Tracking',pref:'Preferences',unk:'Unknown'};
+var WHY={auth:'Name matches a session / sign-in token pattern. Kept so you stay logged in.',trk:'Matches a known analytics or advertising tracker signature.',pref:'Stores a site setting (region, language, consent choice).',unk:'No known pattern matched — flagged for review rather than trusted.'};
+var CNN=[['auth','sendAuthToken','.cnn.com','CNN sign-in'],['auth','sendAuthToken2','.cnn.com','CNN sign-in'],['auth','isInAuthTokenExperiment','.cnn.com','CNN sign-in'],['auth','optimizelySession','.cnn.com','Optimizely session'],['auth','resolveAuthTimestamp','.cnn.com','CNN sign-in'],['auth','WMUKID_STABLE','.cnn.com','WarnerMedia ID'],
+['trk','_ga','.cnn.com','Google Analytics'],['trk','_ga_XJ4T','.cnn.com','Google Analytics'],['trk','_gid','.cnn.com','Google Analytics'],['trk','_gcl_au','.cnn.com','Google Ads'],['trk','_fbp','.cnn.com','Meta Pixel'],['trk','fr','.cnn.com','Meta Pixel'],['trk','s_ecid','.cnn.com','Adobe Experience Cloud'],['trk','AMCV_7FF8','.cnn.com','Adobe Experience Cloud'],['trk','AMCVS_7FF8','.cnn.com','Adobe Experience Cloud'],['trk','s_cc','.cnn.com','Adobe Analytics'],['trk','s_sq','.cnn.com','Adobe Analytics'],['trk','_cb','.cnn.com','Chartbeat'],['trk','_cb_svref','.cnn.com','Chartbeat'],['trk','_chartbeat2','.cnn.com','Chartbeat'],['trk','_v__chartbeat3','.cnn.com','Chartbeat'],['trk','_pcid','.cnn.com','Piano'],['trk','_pctx','.cnn.com','Piano'],['trk','cX_P','.cnn.com','Piano Cxense'],['trk','cX_G','.cnn.com','Piano Cxense'],['trk','sp','collector.cdp.cnn.com','Snowplow'],['trk','_sp_ses.f5fb','.cnn.com','Snowplow'],['trk','_sp_id.f5fb','.cnn.com','Snowplow'],
+['pref','countryCode','.cnn.com','CNN region'],['pref','stateCode','.cnn.com','CNN region'],['pref','OptanonAlertBoxClosed','.cnn.com','OneTrust consent choice'],
+['unk','wbdLTP','.cnn.com',''],['unk','datid','.cnn.com',''],['unk','CDPID','.cnn.com',''],['unk','sendWMSegs','.cnn.com',''],['unk','FastAB','.cnn.com',''],['unk','FastAB_Zion','.cnn.com',''],['unk','umto','www.cnn.com',''],['unk','sato','.cnn.com',''],['unk','psmPageLoadId','.cnn.com',''],['unk','g_state','www.cnn.com',''],['unk','SecGpc','.cnn.com',''],['unk','usprivacy','.cnn.com',''],['unk','__idcontext','.cnn.com',''],['unk','wbdFch','.www.cnn.com',''],['unk','nexus-web-app-id','www.cnn.com',''],['unk','_pc_may_test_group','www.cnn.com','']];
+var POOL={trk:[['_ga','Google Analytics'],['_gid','Google Analytics'],['_gcl_au','Google Ads'],['_fbp','Meta Pixel'],['fr','Meta Pixel'],['_uetsid','Microsoft Ads'],['_uetvid','Microsoft Ads'],['_ttp','TikTok Pixel'],['_pin_unauth','Pinterest Tag'],['s_ecid','Adobe Experience Cloud'],['_hjSessionUser','Hotjar'],['_clck','Microsoft Clarity'],['IDE','Google DoubleClick'],['_scid','Snap Pixel'],['_rdt_uuid','Reddit Pixel']],
+ auth:[['session_id','Site sign-in'],['auth_token','Site sign-in'],['__Secure-session','Site sign-in'],['csrftoken','Site security'],['remember_me','Site sign-in']],
+ pref:[['lang','Language setting'],['locale','Region setting'],['theme','Display setting'],['consent_choice','Consent choice']],
+ unk:[['_uid',''],['visitor_id',''],['ab_bucket',''],['exp_group',''],['__cf_bm',''],['tz',''],['ref_src','']]};
+var SITES=[['cnn.com',47,'Tracking-heavy: Adobe, Chartbeat, Piano','#cc0000'],['dickssportinggoods.com',52,'Retail analytics + ad pixels','#0f5132'],['ebay.com',27,'Session + personalization','#e53238'],['nike.com',27,'Ad pixels + session','#111111'],['google.com',24,'Account + preferences','#4285f4'],['bbc.com',22,'Analytics + consent','#222222'],['chatgpt.com',19,'Session + auth','#10a37f'],['claude.ai',16,'Session + auth','#c96442'],['omio.com',16,'Booking session + ads','#1a3c6e'],['youtube.com',16,'Preferences + ads','#ff0000']];
+var PROF={retail:{auth:.1,trk:.55,pref:.05},mixed:{auth:.15,trk:.4,pref:.1},authy:{auth:.45,trk:.1,pref:.15}};
+var KIND={'dickssportinggoods.com':'retail','nike.com':'retail','omio.com':'retail','ebay.com':'mixed','bbc.com':'mixed','youtube.com':'mixed','google.com':'authy','chatgpt.com':'authy','claude.ai':'authy'};
+var INV={};var META={};
+SITES.forEach(function(s){META[s[0]]={n:s[1],desc:s[2],col:s[3]};});
+INV['cnn.com']=CNN.map(function(r){return {cat:r[0],name:r[1],domain:r[2],vendor:r[3]};});
+SITES.forEach(function(s){if(s[0]==='cnn.com')return;var p=PROF[KIND[s[0]]||'mixed'],n=s[1];var c={auth:Math.round(n*p.auth),trk:Math.round(n*p.trk),pref:Math.max(1,Math.round(n*p.pref))};c.unk=Math.max(0,n-c.auth-c.trk-c.pref);
+ var list=[];ORDER.forEach(function(k){for(var i=0;i<c[k];i++){var e=POOL[k][i%POOL[k].length];list.push({cat:k,name:e[0]+(i>=POOL[k].length?'_'+i:''),domain:(i%3===0?'www.':'.')+s[0],vendor:e[1]});}});INV[s[0]]=list;});
+var OBS={auth:[64,'chatgpt.com, claude.ai, google.com'],trk:[437,'cnn.com, dickssportinggoods.com, nike.com'],pref:[28,'youtube.com, google.com, bbc.com'],unk:[401,'cnn.com, ebay.com, omio.com']};
+var REMOVE={strict:['trk','unk','pref'],balanced:['trk','unk'],trusted:['trk']};
+var MDESC={strict:'removes trackers, unknown and preference cookies. Keeps your logins.',balanced:'removes trackers and unknown cookies. Keeps preferences and logins.',trusted:'removes only known trackers. Keeps everything else.'};
+var POS={trusted:0,balanced:50,strict:100};
+
+/* ===== state ===== */
+var ACTIVE='cnn.com',viewing=ACTIVE,vmode='strict',rules={},openCat=null,lim=6,q='',bwLim=5,currentView='vSite',flashName=null;
+var COL_L={auth:'#16a34a',trk:'#dc2626',pref:'#6366f1',unk:'#d97706'},COL_D={auth:'#34d399',trk:'#f87171',pref:'#a5b4fc',unk:'#fbbf24'},COL=COL_L;
+var theme='light';
+var MOON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+var SUN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+
+/* ===== helpers ===== */
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+function inv(d){return INV[d]||[];}
+function countsOf(list){var c={auth:0,trk:0,pref:0,unk:0};list.forEach(function(x){c[x.cat]++;});return c;}
+function isRem(k){return REMOVE[vmode].indexOf(k)>=0;}
+function remOf(list){var c=countsOf(list),n=0;ORDER.forEach(function(k){if(isRem(k))n+=c[k];});return n;}
+function normRoot(v){return String(v||'').toLowerCase().trim().replace(/^https?:\/\//,'').split('/')[0].split('?')[0].split(':')[0].replace(/^www\./,'');}
+function looksDomain(v){return /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(normRoot(v));}
+function favCol(d){return (META[d]&&META[d].col)||'#64748b';}
+function segWidths(vals,minPct){var tot=vals.reduce(function(a,b){return a+b;},0);if(!tot)return vals.map(function(){return 0;});var raw=vals.map(function(v){return v/tot*100;});var small=raw.map(function(p){return p>0&&p<minPct;});var reserved=small.reduce(function(a,s){return a+(s?minPct:0);},0);var bigTot=raw.reduce(function(a,p,i){return a+(small[i]?0:p);},0);return raw.map(function(p,i){return p===0?0:(small[i]?minPct:p/bigTot*(100-reserved));});}
+function arcPath(cx,cy,r,a0,a1){var s=[cx+r*Math.cos(a0),cy+r*Math.sin(a0)],e=[cx+r*Math.cos(a1),cy+r*Math.sin(a1)];return 'M'+s[0]+' '+s[1]+' A'+r+' '+r+' 0 '+((a1-a0)>Math.PI?1:0)+' 1 '+e[0]+' '+e[1];}
+var tip=$('tip');
+function moveTip(ev){if(!ev)return;var w=tip.offsetWidth,h=tip.offsetHeight,x=ev.clientX+14,y=ev.clientY+14;if(x+w>innerWidth-8)x=ev.clientX-w-14;if(y+h>innerHeight-8)y=ev.clientY-h-14;tip.style.left=Math.max(8,x)+'px';tip.style.top=Math.max(8,y)+'px';}
+function showTip(html,ev){tip.innerHTML=html;tip.style.display='block';moveTip(ev);}
+function hideTip(){tip.style.display='none';}
+function bindTip(el,fn){el.addEventListener('mouseenter',function(e){showTip(fn(),e);});el.addEventListener('mousemove',moveTip);el.addEventListener('mouseleave',hideTip);el.setAttribute('tabindex','0');el.addEventListener('focus',function(){var r=el.getBoundingClientRect();showTip(fn(),{clientX:r.left,clientY:r.bottom});});el.addEventListener('blur',hideTip);}
+function tally(list,key){var m={};list.forEach(function(c){var v=c[key]||'(no vendor match)';m[v]=(m[v]||0)+1;});return Object.keys(m).sort(function(a,b){return m[b]-m[a];}).map(function(k){return k+' ('+m[k]+')';});}
+function catTip(k){var all=inv(viewing),list=all.filter(function(c){return c.cat===k;}),pct=all.length?Math.round(list.length/all.length*100):0,rm=isRem(k);
+ var ex=list.slice(0,5).map(function(c){return '<code>'+esc(c.name)+'</code>';}).join(', ')+(list.length>5?', +'+(list.length-5)+' more':'');
+ return '<h4><span>'+NAME[k]+' · '+list.length+' ('+pct+'%)</span><span class="tg '+(rm?'rm':'kp')+'">'+(rm?'REMOVE':'KEEP')+'</span></h4><div><span class="k">Why:</span> '+WHY[k]+'</div>'+(k!=='unk'&&list.length?'<div><span class="k">Sources:</span> '+esc(tally(list,'vendor').slice(0,4).join(', '))+'</div>':'')+(list.length?'<div><span class="k">Domains:</span> '+esc(tally(list,'domain').slice(0,3).join(', '))+'</div><hr><div><span class="k">Cookies:</span> '+ex+'</div>':'')+'<div class="k" style="margin-top:4px">Under '+cap(vmode)+': '+(rm?'removed when you clean.':'kept.')+'</div>';}
+function cookieTip(c){var rm=isRem(c.cat);return '<h4><span><code>'+esc(c.name)+'</code></span><span class="tg '+(rm?'rm':'kp')+'">'+(rm?'REMOVE':'KEEP')+'</span></h4><div><span class="k">Domain:</span> '+esc(c.domain)+'</div><div><span class="k">Category:</span> '+NAME[c.cat]+'</div>'+(c.vendor?'<div><span class="k">Source:</span> '+esc(c.vendor)+'</div>':'')+'<div><span class="k">Why:</span> '+WHY[c.cat]+'</div><div class="k" style="margin-top:4px">Value: hash preview only — the raw value is never shown.</div>';}
+function obsTip(k){var tot=0;ORDER.forEach(function(x){tot+=OBS[x][0];});return '<h4><span>'+NAME[k]+' · '+OBS[k][0]+' cookies</span><span>'+Math.round(OBS[k][0]/tot*100)+'%</span></h4><div><span class="k">Why:</span> '+WHY[k]+'</div><div><span class="k">Most from:</span> '+OBS[k][1]+'</div>';}
+function siteTip(d){var m=META[d];return '<h4><span>'+d+'</span><span>'+(m?m.n:0)+' cookies</span></h4><div><span class="k">What CookieGate sees:</span> '+(m?m.desc:'')+'</div><div class="k" style="margin-top:4px">Tap to open it in the site view.</div>';}
+function toast(msg,warn){var t=$('toast');t.className='toast show'+(warn?' warn':'');t.textContent=msg;}
+
+/* ===== site view ===== */
+function renderHeader(){var site=currentView==='vSite';var d=site?viewing:'browser';
+ $('domName').textContent=site?viewing:'All sites';$('fav').textContent=site?viewing.charAt(0):'∗';$('fav').style.background=site?favCol(viewing):'#4f46e5';
+ $('topSub').textContent=!site?'Whole browser':(viewing===ACTIVE?'Active site':'Search result — not the open tab');}
+function renderSite(){hideTip();renderHeader();
+ var searching=q.length>0;$('results').classList.toggle('hide',!searching);$('siteContent').classList.toggle('hide',searching);$('searchWrap').classList.toggle('has',searching);
+ $('back').classList.toggle('hide',viewing===ACTIVE||searching);$('backTxt').textContent='Showing '+viewing;$('backBtn').textContent='← Back to '+ACTIVE;
+ if(searching){renderResults();renderCta();return;}
+ var list=inv(viewing),c=countsOf(list),tot=list.length,rem=remOf(list);
+ $('sTot').textContent=tot;$('sOn').textContent=(tot===1?'cookie':'cookies')+' on '+viewing;
+ $('sLine').innerHTML=tot?('<b class="k">'+(tot-rem)+' kept</b> · <b class="r">'+rem+' removable</b> under '+cap(vmode)+(rules[viewing]?'<span class="rule">rule: '+cap(rules[viewing])+'</span>':'')):'CookieGate has no cookies stored for this domain yet.'+(rules[viewing]?'<span class="rule">rule: '+cap(rules[viewing])+'</span>':'');
+ var bar=$('sBar');bar.innerHTML='';bar.classList.toggle('hide',!tot);var w=segWidths(ORDER.map(function(k){return c[k];}),8);
+ ORDER.forEach(function(k,i){if(!c[k])return;var s=document.createElement('i');s.style.width=w[i]+'%';s.style.background=COL[k];s.style.opacity=isRem(k)?1:.45;bindTip(s,function(){return catTip(k);});s.onclick=function(){toggleCat(k);};bar.appendChild(s);});
+ var ch=$('sChips');ch.innerHTML='';ch.classList.toggle('hide',!tot);$('sHint').classList.toggle('hide',!tot);
+ ORDER.forEach(function(k){var rm=isRem(k);var d=document.createElement('div');d.className='chip'+(openCat===k?' on':'');d.innerHTML='<span class="l"><em style="background:'+COL[k]+'"></em>'+NAME[k]+' <b>'+c[k]+'</b></span><span class="st '+(rm?'rm':'kp')+'">'+(rm?'remove':'keep')+'</span>';bindTip(d,function(){return catTip(k);});d.onclick=function(){toggleCat(k);};ch.appendChild(d);});
+ renderDrawer();
+ $('fill').style.width=POS[vmode]+'%';
+ document.querySelectorAll('#slider button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-m')===vmode);});
+ document.querySelectorAll('#slabels span').forEach(function(s){s.classList.toggle('on',s.getAttribute('data-m')===vmode);});
+ $('mdesc').innerHTML='<b>'+cap(vmode)+'</b> '+MDESC[vmode];
+ $('remember').checked=!!rules[viewing];$('rememberLbl').textContent='Use '+cap(vmode)+' every time I visit '+viewing;
+ renderCta();}
+function renderCta(){var list=inv(viewing),rem=remOf(list);var cl=$('clean');cl.textContent=rem?('Clean '+rem+' cookies on '+viewing):'Nothing to clean on '+viewing;cl.disabled=!rem;$('wipe').textContent='Wipe everything on '+viewing;$('wipe').disabled=!list.length;}
+function toggleCat(k){openCat=openCat===k?null:k;lim=6;renderSite();}
+function renderDrawer(){var dr=$('drawer');if(!openCat){dr.classList.add('hide');return;}dr.classList.remove('hide');
+ var k=openCat,rm=isRem(k),list=inv(viewing).filter(function(c){return c.cat===k;});
+ $('dTitle').innerHTML=NAME[k]+' · '+list.length+' <span class="st '+(rm?'rm':'kp')+'" style="display:inline-block;margin-left:6px">'+(rm?'remove':'keep')+'</span>';
+ var box=$('dList');box.innerHTML='';
+ list.slice(0,lim).forEach(function(c){var r=document.createElement('div');r.className='ck'+(c.name===flashName?' flash':'');r.innerHTML='<code>'+esc(c.name)+'</code><span class="d">'+esc(c.domain)+'</span>';bindTip(r,function(){return cookieTip(c);});box.appendChild(r);});
+ if(list.length>lim||lim>6){var w=document.createElement('div');w.className='lbtns';
+  if(list.length>lim){var b=document.createElement('button');b.className='more';b.textContent='Show '+Math.min(10,list.length-lim)+' more ('+(list.length-lim)+' left)';b.onclick=function(){lim+=10;renderDrawer();};w.appendChild(b);}
+  if(lim>6){var f=document.createElement('button');f.className='more';f.textContent='Show fewer';f.onclick=function(){lim=6;renderDrawer();};w.appendChild(f);}
+  box.appendChild(w);}
+ flashName=null;}
+
+/* ===== search: results replace the site view ===== */
+function renderResults(){var box=$('results');box.innerHTML='';var qq=q.toLowerCase(),root=normRoot(q);
+ var doms=Object.keys(INV).filter(function(d){return d.indexOf(root)>=0||d.indexOf(qq)>=0;}).slice(0,5);
+ var typedNew=looksDomain(q)&&!INV[root];
+ if(doms.length||typedNew){var h=document.createElement('div');h.className='rg';h.textContent='Sites';box.appendChild(h);
+  doms.forEach(function(d){var r=document.createElement('div');r.className='srow';r.innerHTML='<span class="mini" style="background:'+favCol(d)+'">'+d.charAt(0)+'</span><span class="n">'+esc(d)+(d===ACTIVE?' <span class="c">(open tab)</span>':'')+'</span><span class="c">'+inv(d).length+' cookies</span><span class="go">›</span>';bindTip(r,function(){return siteTip(d);});r.onclick=function(){openDomain(d);};box.appendChild(r);});
+  if(typedNew){var r=document.createElement('div');r.className='srow';r.innerHTML='<span class="mini" style="background:#64748b">'+esc(root.charAt(0))+'</span><span class="n">'+esc(root)+'</span><span class="c">no cookies stored</span><span class="go">›</span>';r.onclick=function(){openDomain(root);};box.appendChild(r);}}
+ var matches=inv(viewing).filter(function(c){return (c.name+' '+c.domain+' '+c.vendor+' '+NAME[c.cat]).toLowerCase().indexOf(qq)>=0;});
+ var h2=document.createElement('div');h2.className='rg';h2.textContent='Cookies on '+viewing+' ('+matches.length+')';box.appendChild(h2);
+ if(matches.length){var rb=document.createElement('div');rb.className='rbox';
+  matches.slice(0,8).forEach(function(c){var rm=isRem(c.cat);var r=document.createElement('div');r.className='ck';r.style.cursor='pointer';r.innerHTML='<span><code>'+esc(c.name)+'</code> <span class="d">'+esc(c.vendor||NAME[c.cat])+'</span></span><span class="st '+(rm?'rm':'kp')+'">'+(rm?'remove':'keep')+'</span>';bindTip(r,function(){return cookieTip(c);});r.onclick=function(){selectCookie(c);};rb.appendChild(r);});
+  if(matches.length>8){var m=document.createElement('div');m.className='empty';m.style.padding='8px';m.textContent='+'+(matches.length-8)+' more — keep typing to narrow it down';rb.appendChild(m);}
+  box.appendChild(rb);}
+ else{var e=document.createElement('div');e.className='empty';e.innerHTML='No cookies on '+esc(viewing)+' match “'+esc(q)+'”.'+(doms.length||typedNew?'':'<br>Type a domain like <b>bbc.com</b> to look up another site.');box.appendChild(e);}}
+function clearSearch(){q='';$('q').value='';}
+function openDomain(d){viewing=d;vmode=rules[d]||'strict';openCat=null;lim=6;clearSearch();$('toast').className='toast';renderSite();}
+function selectCookie(c){clearSearch();openCat=c.cat;lim=Math.max(6,inv(viewing).filter(function(x){return x.cat===c.cat;}).indexOf(c)+1);flashName=c.name;renderSite();}
+
+/* ===== browser view (ring lives only here) ===== */
+function drawRing(){var svg=$('ring');while(svg.firstChild)svg.removeChild(svg.firstChild);var vals=ORDER.map(function(k){return OBS[k][0];}),w=segWidths(vals,6),a=-Math.PI/2,gap=0.04;
+ ORDER.forEach(function(k,i){var span=w[i]/100*Math.PI*2;var p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d',arcPath(60,60,48,a+gap,a+span-gap));p.setAttribute('stroke',COL[k]);p.setAttribute('stroke-width','14');p.setAttribute('fill','none');p.style.cursor='help';bindTip(p,function(){return obsTip(k);});svg.appendChild(p);a+=span;});}
+function renderBrowser(){hideTip();renderHeader();drawRing();
+ var c=$('oCats');c.innerHTML='';ORDER.forEach(function(k){var r=document.createElement('div');r.className='lrow';r.innerHTML='<span class="dot" style="background:'+COL[k]+'"></span><span class="cn">'+NAME[k]+'</span><b>'+OBS[k][0]+'</b>';bindTip(r,function(){return obsTip(k);});c.appendChild(r);});
+ var s=$('oSites');s.innerHTML='';var max=Math.max.apply(null,SITES.map(function(x){return x[1];}));SITES.slice().sort(function(a,b){return b[1]-a[1];}).slice(0,bwLim).forEach(function(x){var r=document.createElement('div');r.className='site';r.innerHTML='<span class="n">'+x[0]+'</span><span class="t"><i style="width:'+Math.min(100,x[1]/max*100)+'%"></i></span><span class="c">'+x[1]+'</span>';bindTip(r,function(){return siteTip(x[0]);});r.onclick=function(){switchView('vSite');openDomain(x[0]);};s.appendChild(r);});
+ var exp=bwLim>=SITES.length;$('oMore').textContent=exp?'Show less ▴':'Show more (top '+SITES.length+') ▾';$('oNote').textContent=exp?'Full list of all 244 sites is in Download JSON.':'';}
+
+/* ===== wiring ===== */
+function switchView(v){currentView=v;$('vSite').classList.toggle('hide',v!=='vSite');$('vBrowser').classList.toggle('hide',v!=='vBrowser');$('cta').classList.toggle('hide',v!=='vSite');document.querySelectorAll('.tabs button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-v')===v);});hideTip();if(v==='vSite')renderSite();else renderBrowser();}
+function applyTheme(){document.documentElement.setAttribute('data-theme',theme);COL=theme==='dark'?COL_D:COL_L;var b=$('themeBtn');b.innerHTML=theme==='dark'?(SUN+'<span>Light</span>'):(MOON+'<span>Dark</span>');b.title=theme==='dark'?'Switch to light mode':'Switch to dark mode';if(currentView==='vSite')renderSite();else renderBrowser();}
+$('themeBtn').onclick=function(){theme=theme==='dark'?'light':'dark';hideTip();applyTheme();};
+$('q').oninput=function(e){q=e.target.value.trim();renderSite();};
+$('q').onkeydown=function(e){if(e.key==='Enter'&&q){var root=normRoot(q);if(INV[root]||looksDomain(q)){openDomain(root);}else{var d=Object.keys(INV).filter(function(x){return x.indexOf(root)>=0;})[0];if(d)openDomain(d);}}if(e.key==='Escape'){clearSearch();renderSite();}};
+$('qx').onclick=function(){clearSearch();renderSite();$('q').focus();};
+$('backBtn').onclick=function(){openDomain(ACTIVE);};
+$('dClose').onclick=function(){openCat=null;renderSite();};
+document.querySelectorAll('#slider button, #slabels span').forEach(function(b){b.onclick=function(){vmode=b.getAttribute('data-m');if(rules[viewing])rules[viewing]=vmode;$('toast').className='toast';renderSite();};});
+$('remember').onchange=function(e){if(e.target.checked){rules[viewing]=vmode;toast('Saved: CookieGate will use '+cap(vmode)+' every time you visit '+viewing+'.');}else{delete rules[viewing];toast('Rule removed for '+viewing+'.');}renderSite();};
+$('clean').onclick=function(){var list=inv(viewing),rem=remOf(list);toast('Cleaned '+rem+' cookies on '+viewing+'. '+(list.length-rem)+' kept, including '+countsOf(list).auth+' logins. (prototype — nothing deleted)');};
+$('wipe').onclick=function(){var list=inv(viewing);toast('Wipe everything removes all '+list.length+' cookies on '+viewing+', including '+countsOf(list).auth+' login cookies. You would confirm first. (prototype)',true);};
+$('oMore').onclick=function(){bwLim=bwLim>=SITES.length?5:SITES.length;renderBrowser();};
+document.querySelectorAll('.tabs button').forEach(function(b){b.onclick=function(){switchView(b.getAttribute('data-v'));};});
+applyTheme();
+</script>
+</body></html>

@@ -1,0 +1,18 @@
+{
+    "schema":  "contract_registry.data_platform_profile.v1",
+    "generated_utc":  "2026-10-13T05:30:36.4167924Z",
+    "repo_name":  "cookiegate",
+    "target_repo":  "C:\\dev\\cookiegate",
+    "files_scanned":  7858,
+    "scan_truncated":  false,
+    "platform_signals":  [
+
+                         ],
+    "category_summary":  [
+
+                         ],
+    "detection_count":  0,
+    "detections":  [
+
+                   ]
+}

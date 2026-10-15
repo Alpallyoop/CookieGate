@@ -1,0 +1,138 @@
+<!doctype html><html><head><meta charset="utf-8"><title>CookieGate redesign</title>
+<style>
+:root{
+  --bg:#070b14;--panel:#111827;--panel2:#1b2232;--line:rgba(160,176,210,.18);
+  --text:#f7f9fd;--muted:#a9b2c3;--blue:#5b5cf6;--red:#dc3036;--green:#25d366;--orange:#ff9f1c;color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,'Segoe UI',system-ui,sans-serif;display:flex;gap:26px;flex-wrap:wrap;padding:22px;justify-content:center;align-items:flex-start}
+.phone{width:380px;background:var(--bg);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.cap{font-size:12px;color:var(--muted);text-align:center;margin:6px 0 10px;letter-spacing:.3px}
+/* view nav */
+.nav{display:flex;gap:6px;padding:12px 14px 2px}
+.nav button{flex:1;border:1px solid var(--line);background:rgba(15,23,42,.74);color:var(--muted);font-size:11px;font-weight:800;padding:9px 0;border-radius:11px;cursor:pointer}
+.nav button.on{background:rgba(91,92,246,.28);border-color:rgba(143,180,255,.45);color:#fff}
+/* header */
+.hd{display:flex;justify-content:space-between;align-items:flex-start;padding:12px 14px 10px}
+.hd h1{font-size:15px;margin:0}
+.site{font-size:13px;margin-top:3px;font-weight:600}
+.pill{font-size:10px;font-weight:800;color:var(--green);border:1px solid rgba(37,211,102,.4);background:rgba(37,211,102,.12);border-radius:20px;padding:4px 9px;white-space:nowrap}
+/* answer card */
+.answer{margin:2px 14px 0;background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:14px;padding:14px}
+.big{font-size:26px;font-weight:800;line-height:1}
+.big small{font-size:13px;color:var(--muted);font-weight:600}
+.sub{font-size:12px;color:var(--muted);margin-top:6px}
+.sub b.keep{color:var(--green)}.sub b.rem{color:var(--orange)}
+.bar{display:flex;height:10px;border-radius:6px;overflow:hidden;margin-top:12px;border:1px solid var(--line)}
+.bar i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:10px 14px;margin-top:10px;font-size:11px;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:5px}
+.legend em{width:9px;height:9px;border-radius:3px;display:inline-block}
+.legend b{color:var(--text)}
+/* mode */
+.mode{margin:14px 14px 0}
+.mlabel{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;display:flex;justify-content:space-between}
+.scope{color:var(--blue);font-weight:700;text-transform:none;letter-spacing:0;cursor:pointer}
+.seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:3px}
+.seg button{flex:1;border:0;background:transparent;color:var(--muted);font-weight:800;font-size:12px;padding:9px 0;border-radius:8px;cursor:pointer}
+.seg button.on{background:rgba(91,92,246,.28);color:#fff;box-shadow:0 0 0 1px rgba(143,180,255,.4) inset}
+.explain{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.45}
+.explain b{color:var(--text)}
+/* actions */
+.acts{display:flex;gap:9px;margin:14px}
+.btn{flex:1;border:0;border-radius:11px;padding:12px;font-weight:800;font-size:13px;cursor:pointer}
+.primary{background:var(--blue);color:#fff}
+.ghost{background:transparent;color:var(--red);border:1px solid rgba(220,48,54,.5)}
+.more{margin:0 14px 14px;border-top:1px solid var(--line)}
+.row{display:flex;justify-content:space-between;align-items:center;padding:11px 2px;font-size:13px;cursor:pointer}
+.row span.m{color:var(--muted);font-size:12px}
+.row+.row{border-top:1px solid var(--line)}
+.chev{color:var(--muted)}
+.foot{font-size:10px;color:var(--muted);text-align:center;padding:0 14px 14px}
+/* domain ops */
+.dhead{padding:4px 14px 0}
+.dhead h2{font-size:15px;margin:10px 0 4px}
+.dhead p{font-size:12px;color:var(--muted);margin:0 0 4px;line-height:1.4}
+.field{margin:10px 14px 0;display:flex;gap:8px}
+.field input{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:10px;color:var(--text);padding:11px;font-size:13px}
+.hint{margin:6px 14px 0;font-size:11px;color:var(--muted)}
+.dresult{margin:12px 14px 0;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:12px;color:var(--muted)}
+.dresult b{color:var(--text)}
+.dresult .keep{color:var(--green)}.dresult .rem{color:var(--orange)}
+.check{display:flex;align-items:center;gap:8px;margin:12px 14px 0;font-size:12px;color:var(--text)}
+.check input{width:16px;height:16px}
+.notes{max-width:300px;font-size:13px;color:#cdd5e6;line-height:1.5}
+.notes h3{color:#fff;font-size:14px;margin:4px 0 6px}
+.notes li{margin:5px 0}
+.tag{display:inline-block;background:rgba(91,92,246,.2);border:1px solid rgba(143,180,255,.35);color:#cdd5ff;border-radius:6px;padding:1px 6px;font-size:11px;font-weight:700}
+</style></head>
+<body>
+
+<div>
+<div class="cap">PROPOSED — Active Site</div>
+<div class="phone">
+  <div class="nav"><button class="on">Active Site</button><button>Browser Observer</button><button>Domain Ops</button></div>
+  <div class="hd"><div><h1>CookieGate</h1><div class="site">www.cnn.com</div></div><div class="pill">● READY</div></div>
+  <div class="answer">
+    <div class="big">47 <small>cookies on cnn.com</small></div>
+    <div class="sub"><b class="keep">6 logins kept</b> · <b class="rem">41 removable</b> under Strict</div>
+    <div class="bar"><i style="width:13%;background:var(--green)"></i><i style="width:47%;background:var(--red)"></i><i style="width:6%;background:var(--blue)"></i><i style="width:34%;background:var(--orange)"></i></div>
+    <div class="legend">
+      <span><em style="background:var(--green)"></em>Auth/session <b>6</b></span>
+      <span><em style="background:var(--red)"></em>Tracking <b>22</b></span>
+      <span><em style="background:var(--blue)"></em>Preferences <b>3</b></span>
+      <span><em style="background:var(--orange)"></em>Unknown <b>16</b></span>
+    </div>
+  </div>
+  <div class="mode">
+    <div class="mlabel"><span>Cleanup mode</span><span class="scope">This site ▾</span></div>
+    <div class="seg"><button class="on">Strict</button><button>Balanced</button><button>Trusted</button></div>
+    <div class="explain"><b>Strict</b> removes tracking &amp; unknown cookies and keeps you logged in.</div>
+  </div>
+  <div class="acts"><button class="btn primary">Clean 41 cookies</button><button class="btn ghost">Wipe all</button></div>
+  <div class="more">
+    <div class="row"><span>View all 47 cookies</span><span class="chev">▾</span></div>
+    <div class="row"><span>Browser-wide total</span><span class="m">930 across 244 sites ▾</span></div>
+    <div class="row"><span>Export report (privacy-safe)</span><span class="chev">▾</span></div>
+  </div>
+  <div class="foot">Raw cookie values are never shown or exported.</div>
+</div>
+</div>
+
+<div>
+<div class="cap">PROPOSED — Domain Ops (kept)</div>
+<div class="phone">
+  <div class="nav"><button>Active Site</button><button>Browser Observer</button><button class="on">Domain Ops</button></div>
+  <div class="dhead">
+    <h2>Domain Tools</h2>
+    <p>Inspect or wipe any domain without leaving your current tab.</p>
+  </div>
+  <div class="field"><input value="cnn.com/section/politics"></div>
+  <div class="hint">Domain or URL — normalizes to the root: <b style="color:#cdd5ff">cnn.com</b> (covers www. and subdomains)</div>
+  <div class="acts"><button class="btn primary">Inspect domain</button><button class="btn ghost">Wipe domain</button></div>
+  <div class="check"><input type="checkbox"> Include auth/session cookies (off = stay logged in)</div>
+  <div class="dresult"><b>78 cookies</b> for <b>cnn.com</b> — <span class="keep">10 auth/session preserved</span> · <span class="rem">68 removable</span></div>
+  <div class="mode" style="margin-top:14px">
+    <div class="mlabel"><span>Save a rule for this domain</span></div>
+    <div class="seg"><button class="on">Strict</button><button>Balanced</button><button>Trusted</button></div>
+  </div>
+  <div class="acts"><button class="btn primary">Save rule</button><button class="btn ghost" style="color:#cdd5ff;border-color:var(--line)">Export rules</button></div>
+  <div class="foot">Subdomains &amp; paths fold into the root domain. Auth preserved unless included.</div>
+</div>
+</div>
+
+<div class="notes">
+  <h3>Three views kept</h3>
+  <ul>
+    <li><span class="tag">Active Site</span> answers-first: count, kept vs removable, category bar, one mode control.</li>
+    <li><span class="tag">Browser Observer</span> unchanged — the browser-wide donut &amp; totals.</li>
+    <li><span class="tag">Domain Ops</span> kept, just cleaned up: type a domain → inspect/wipe, normalizes to root, save per-domain rules.</li>
+  </ul>
+  <h3>Same engine, clearer surface</h3>
+  <ul>
+    <li>All existing logic stays (classification, preserve-auth, privacy-safe export). Only the layout &amp; wording change.</li>
+    <li>Nothing deletes without a tap.</li>
+  </ul>
+</div>
+
+</body></html>

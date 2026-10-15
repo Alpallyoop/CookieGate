@@ -1,0 +1,89 @@
+<!doctype html>
+<html data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <title>CookieGate</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="tip" role="tooltip"></div>
+  <div class="app">
+    <header class="top">
+      <div class="fav" id="fav" aria-hidden="true"></div>
+      <div class="who">
+        <div class="dom"><span id="domName">CookieGate</span><button class="theme" id="themeBtn" type="button"></button></div>
+        <div class="subt" id="topSub">Loading…</div>
+      </div>
+      <span class="live" id="live">Live</span>
+    </header>
+
+    <main class="body" id="vSite">
+      <div class="search" id="searchWrap">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.3-4.3"/></svg>
+        <input id="q" type="text" placeholder="Search cookies, vendors or a domain (e.g. bbc.com)" autocomplete="off" spellcheck="false" aria-label="Search cookies, vendors or a domain">
+        <button class="x" id="qx" type="button" title="Clear search" aria-label="Clear search">×</button>
+      </div>
+      <div class="back hide" id="back"><span id="backTxt"></span><button id="backBtn" type="button"></button></div>
+      <div id="results" class="res hide"></div>
+
+      <div id="siteContent">
+        <section class="sum" aria-label="Cookie summary">
+          <div class="big"><span id="sTot">–</span> <small id="sOn"></small></div>
+          <div class="sl" id="sLine"></div>
+          <div class="shield hide" id="sBanner"></div>
+          <div class="bar" id="sBar"></div>
+          <div class="chips" id="sChips"></div>
+          <div class="hint" id="sHint">Tap a category to see its cookies · hover for details</div>
+        </section>
+        <section class="drawer hide" id="drawer" aria-label="Cookies in category">
+          <div class="dh"><span id="dTitle"></span><button id="dClose" type="button" title="Close" aria-label="Close list">×</button></div>
+          <div class="list" id="dList"></div>
+        </section>
+
+        <div class="sec">Cleanup mode</div>
+        <div class="slider" id="slider">
+          <div class="line"></div><div class="fill" id="fill"></div>
+          <button type="button" data-m="trusted" style="left:0%" aria-label="Trusted"></button>
+          <button type="button" data-m="balanced" style="left:50%" aria-label="Balanced"></button>
+          <button type="button" data-m="strict" style="left:100%" aria-label="Strict"></button>
+        </div>
+        <div class="slabels" id="slabels"><span data-m="trusted">Trusted</span><span data-m="balanced">Balanced</span><span data-m="strict">Strict</span></div>
+        <div class="mdesc" id="mdesc"></div>
+        <label class="sw"><input type="checkbox" id="remember"><span class="t"></span><span id="rememberLbl"></span></label>
+        <div class="deflink" id="defLine"></div>
+        <div class="toast" id="toast" role="status"></div>
+        <div class="foot"><button class="linkbtn" id="exportSite" type="button">Export privacy-safe report</button><span>Raw cookie values are never shown or exported.</span></div>
+      </div>
+    </main>
+
+    <main class="body hide" id="vBrowser">
+      <div class="gauge"><svg id="ring" viewBox="0 0 120 120" aria-label="Browser-wide cookie categories"></svg><div class="center"><div class="num" id="bTot">–</div><div class="lbl" id="bLbl">reading cookies…</div></div></div>
+      <div class="card" id="oCats"></div>
+      <div class="sec">Sites with the most cookies <span class="lc">· tap to open</span></div>
+      <div class="card"><div id="oSites"></div><div class="lbtns"><button class="more" id="oMore" type="button"></button></div><div class="note" id="oNote"></div></div>
+      <div class="btns"><button class="btn g" id="rescan" type="button">Rescan</button><button class="btn g" id="exportBrowser" type="button">Download JSON</button></div>
+      <button class="btn p wide" id="cleanAll" type="button">Clean all sites</button>
+      <div class="toast" id="btoast" role="status"></div>
+      <div class="note">Read with the extension cookie API. Exports use hash previews — never raw values. Nothing is deleted until you confirm.</div>
+    </main>
+
+    <div class="cta" id="cta"><button class="main" id="clean" type="button"></button><button class="link" id="wipe" type="button"></button></div>
+    <nav class="tabs" id="tabs">
+      <button type="button" data-v="site" id="tabSite" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>This site</button>
+      <button type="button" data-v="browser" id="tabBrowser"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg>Browser</button>
+    </nav>
+
+    <div class="sheet hide" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shTitle">
+      <div class="sheetCard">
+        <h3 id="shTitle"></h3>
+        <p id="shText"></p>
+        <label class="sw hide" id="shOptWrap"><input type="checkbox" id="shOpt"><span class="t"></span><span id="shOptLbl"></span></label>
+        <label class="sw hide" id="shOpt2Wrap"><input type="checkbox" id="shOpt2"><span class="t"></span><span id="shOpt2Lbl"></span></label>
+        <div class="btns"><button class="btn g" id="shCancel" type="button">Cancel</button><button class="btn d" id="shGo" type="button"></button></div>
+      </div>
+    </div>
+  </div>
+  <script src="cg_engine.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+CookieGate — latest release to upload
+
+  release\CookieGate-v0.1.8\
+
+  Firefox (AMO) ........ CookieGate-0.1.8-firefox.zip
+  Chrome Web Store ..... CookieGate-0.1.8-chrome.zip
+  Microsoft Edge ....... CookieGate-0.1.8-edge.zip
+  Opera ................ CookieGate-0.1.8-opera.zip
+  Store icon ........... store-icon-128.png / store-icon-512.png
+  Notes ................ RELEASE_MANIFEST.md (includes "What's new" text)
+
+Built from src\ with:  node tools\build\build_release.mjs
+Older folders (release\CookieGate-v0.1.7, dist\RELEASE_v0.1.3 ... v0.1.6_final, *_TEST.zip, *-newUI.zip) are superseded.

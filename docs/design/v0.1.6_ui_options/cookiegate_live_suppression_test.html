@@ -1,0 +1,1149 @@
+<!doctype html><html><head><meta charset="utf-8"><title>CookieGate live test</title>
+<style>
+  body{font-family:system-ui,Arial,sans-serif;margin:0;background:#0b1020;color:#e6eaf3}
+  #cg-results{padding:14px 16px;background:#070b16;border-bottom:2px solid #2a3452}
+  #cg-results h1{font-size:18px;margin:0 0 8px}
+  .row{display:flex;justify-content:space-between;gap:10px;padding:5px 8px;border-radius:7px;margin:3px 0;font-size:13px}
+  .pass{background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.5)}
+  .fail{background:rgba(239,68,68,.22);border:1px solid rgba(239,68,68,.6)}
+  .verdict{font-weight:900;font-size:20px;margin-top:8px}
+  .fixture{margin:40px 16px;padding:12px;border:1px dashed #33405f;border-radius:8px}
+  button{margin:4px;padding:6px 10px}
+</style>
+<script>
+  // Stub the extension storage API the content script expects.
+  (function(){
+    var mem={};
+    var local={
+      get:function(keys,cb){var o={};(Array.isArray(keys)?keys:[keys]).forEach(function(k){if(k in mem)o[k]=mem[k];});if(cb){cb(o);return;}return Promise.resolve(o);},
+      set:function(obj,cb){Object.assign(mem,obj);if(cb){cb();return;}return Promise.resolve();}
+    };
+    window.chrome={storage:{local:local},runtime:{sendMessage:function(){},lastError:null}};
+  })();
+</script>
+</head><body>
+<div id="cg-results"><h1>CookieGate live suppression test — running…</h1></div>
+
+<!-- f1: OneTrust cookie banner (EXPECT HIDDEN) -->
+<div class="fixture"><div id="f1" class="onetrust-banner-sdk" role="alertdialog" style="position:fixed;bottom:0;left:0;right:0;z-index:2147483647;background:#fff;color:#000;padding:16px">
+We use cookies to personalise content and ads. <button>Accept All</button> <button>Reject All</button> <button>Manage Preferences</button></div></div>
+
+<!-- f2: generic cookie bar (EXPECT HIDDEN) -->
+<div class="fixture"><div id="f2" class="cc-window" style="position:fixed;top:0;left:0;right:0;z-index:9999;background:#eee;color:#000;padding:14px">
+This site uses cookies to improve your experience. <button>Accept</button> <button>Reject</button></div></div>
+
+<!-- f3: Sourcepoint-style modal (EXPECT HIDDEN/REMOVED) -->
+<div class="fixture"><div id="f3" class="sp_message_container_1" style="position:fixed;top:10%;left:25%;width:50%;z-index:2147483000;background:#fff;color:#000;padding:18px">
+<div role="dialog" aria-modal="true">We and our partners use cookies and process personal data such as IP address. <button>I Accept</button> <button>Manage Choices</button></div></div></div>
+
+<!-- f4: Gmail-style OAuth consent (EXPECT KEPT) -->
+<div class="fixture"><div id="f4" style="position:fixed;top:15%;left:30%;width:40%;z-index:9999;background:#fff;color:#000;padding:18px">
+<p>SomeApp wants to access your Google Account. This will allow SomeApp to read, compose, and send emails. See our Privacy Policy and Terms of Service.</p>
+<button>Allow</button> <button>Cancel</button></div></div>
+
+<!-- f5: login modal with password (EXPECT KEPT) -->
+<div class="fixture"><div id="f5" style="position:fixed;top:20%;left:35%;width:30%;z-index:9999;background:#fff;color:#000;padding:18px">
+<h3>Sign in</h3><input type="email" placeholder="Email"><input type="password" placeholder="Password"><button>Log in</button> <a href="#">Forgot your password?</a></div></div>
+
+<!-- f6: discussion post mentioning informed consent (EXPECT KEPT) -->
+<div class="fixture"><div id="f6" style="position:static;background:#121a30;padding:14px">
+<p>Week 4 discussion: informed consent and privacy in research ethics. Do you agree that consent must be ongoing and revocable? Reply with your view.</p>
+<button>Reply</button> <button>Like</button> <button>Edit</button></div></div>
+
+<!-- f7: BBC-style main content (EXPECT KEPT) -->
+<div class="fixture"><div id="f7" style="position:absolute;z-index:1;background:#121a30;padding:14px">
+<main><nav>Home News Sport</nav><article><h2>Privacy, cookies and consent explained</h2>
+<p>An in-depth article discussing cookies, privacy law, GDPR and consent in general terms, far longer than any banner would be, with many links.</p>
+LINKS_PLACEHOLDER
+</article></main></div></div>
+
+<!-- f8: plain footer privacy links (EXPECT KEPT) -->
+<div class="fixture"><footer id="f8" style="position:static;background:#0e1730;padding:14px">
+<a href="#">Privacy Policy</a> · <a href="#">Cookie Policy</a> · <a href="#">Terms</a> · © 2026 Example</footer></div>
+
+<script id="cg-suppressor">
+// COOKIEGATE_BANNER_SUPPRESSION_RUNTIME_V32
+(function(){
+  "use strict";
+
+  var API = typeof browser !== "undefined" ? browser : chrome;
+
+  var CURRENT_KEY = "cookiegate.bannerSuppression.current.v1";
+  var SESSION_KEY = "cookiegate.bannerSuppression.session.v32";
+  var TIMELINE_KEY = "cookiegate.bannerSuppression.timeline.v1";
+  var STATS_KEY = "cookiegate.bannerSuppression.stats.v1";
+  var RULE_LOCK_KEY = "cookiegate.domainModeLocks.v32";
+
+  var MAX_TIMELINE = 500;
+  var MIN_WRITE_MS = 5000;
+  var lastWrite = 0;
+  var lastFingerprint = "";
+
+  function iso(){ return new Date().toISOString(); }
+
+  function host(){
+    try { return String(location.hostname || "").toLowerCase().replace(/^www\./, ""); }
+    catch(e){ return ""; }
+  }
+
+  function shortText(s){
+    return String(s || "").replace(/\s+/g, " ").trim().slice(0, 100);
+  }
+
+  function visible(el){
+    try {
+      if(!el || !el.getBoundingClientRect) return false;
+      var r = el.getBoundingClientRect();
+      if(r.width < 80 || r.height < 20) return false;
+      var cs = getComputedStyle(el);
+      if(cs.display === "none") return false;
+      if(cs.visibility === "hidden") return false;
+      if(Number(cs.opacity || "1") < 0.05) return false;
+      return true;
+    } catch(e){
+      return false;
+    }
+  }
+
+  function selectorHint(el){
+    try {
+      var tag = String(el.tagName || "").toLowerCase();
+      var id = el.id ? ("#" + String(el.id).slice(0, 40)) : "";
+      var cls = "";
+      if(typeof el.className === "string"){
+        cls = el.className.split(/\s+/).filter(Boolean).slice(0, 4).map(function(x){
+          return "." + String(x).slice(0, 32);
+        }).join("");
+      }
+      return tag + id + cls;
+    } catch(e){
+      return "";
+    }
+  }
+
+  function score(el){
+    if(!visible(el)) return 0;
+
+    var hay = shortText([
+      el.innerText || el.textContent || "",
+      el.id || "",
+      el.className || "",
+      el.getAttribute && el.getAttribute("role") || "",
+      el.getAttribute && el.getAttribute("aria-label") || "",
+      el.getAttribute && el.getAttribute("data-testid") || ""
+    ].join(" ")).toLowerCase();
+
+    var s = 0;
+    if(/\bcookie\b|\bcookies\b/.test(hay)) s += 3;
+    if(/\bconsent\b|\bprivacy\b|\bgdpr\b|\bccpa\b/.test(hay)) s += 3;
+    if(/\baccept\b|\bagree\b|\bdecline\b|\breject\b|\bmanage\b|\bpreferences\b|\bchoices\b/.test(hay)) s += 2;
+    if(/\bbanner\b|\bmodal\b|\bdialog\b|\bnotice\b|\bonetrust\b|\bcookiebot\b|\btrustarc\b|\bdidomi\b|\bquantcast\b|\bprivacy[-_ ]?manager\b|\bnotice[-_ ]?container\b/.test(hay)) s += 3;
+
+    return s;
+  }
+
+  function scanCandidates(){
+    var selectors = [
+      "[id*='cookie' i]",
+      "[class*='cookie' i]",
+      "[id*='consent' i]",
+      "[class*='consent' i]",
+      "[id*='privacy' i]",
+      "[class*='privacy' i]",
+      "[id*='gdpr' i]",
+      "[class*='gdpr' i]",
+      "[id*='onetrust' i]",
+      "[class*='onetrust' i]",
+      "[id*='notice' i]",
+      "[class*='notice' i]",
+      "[aria-label*='cookie' i]",
+      "[aria-label*='consent' i]",
+      "[aria-label*='privacy' i]",
+      "[role='dialog']",
+      "[role='alertdialog']",
+      "[aria-modal='true']",
+      "[aria-modal]",
+      "aside",
+      "footer"
+    ];
+
+    var seen = new Set();
+    var out = [];
+
+    selectors.forEach(function(sel){
+      try {
+        Array.prototype.slice.call(document.querySelectorAll(sel)).forEach(function(el){
+          if(seen.has(el)) return;
+          seen.add(el);
+
+          var sc = score(el);
+          if(sc >= 4){
+            out.push({
+              el: el,
+              score: sc,
+              selector_hint: selectorHint(el)
+            });
+          }
+        });
+      } catch(e){}
+    });
+
+    out.sort(function(a,b){ return b.score - a.score; });
+    return out.slice(0, 8);
+  }
+
+  function getLocal(keys){
+    return new Promise(function(resolve){
+      try {
+        if(!API || !API.storage || !API.storage.local){ resolve({}); return; }
+        if(API.storage.local.get.length >= 2){
+          API.storage.local.get(keys, function(v){ resolve(v || {}); });
+          return;
+        }
+        API.storage.local.get(keys).then(function(v){ resolve(v || {}); }).catch(function(){ resolve({}); });
+      } catch(e){
+        resolve({});
+      }
+    });
+  }
+
+  function setLocal(obj){
+    return new Promise(function(resolve){
+      try {
+        if(!API || !API.storage || !API.storage.local){ resolve(false); return; }
+        if(API.storage.local.set.length >= 2){
+          API.storage.local.set(obj, function(){ resolve(true); });
+          return;
+        }
+        API.storage.local.set(obj).then(function(){ resolve(true); }).catch(function(){ resolve(false); });
+      } catch(e){
+        resolve(false);
+      }
+    });
+  }
+
+  function modeAllowsSuppression(mode){
+    var m = String(mode || "strict").toLowerCase();
+    return m === "strict" || m === "block" || m === "standard" || m === "balanced";
+  }
+
+  async function activeRuleMode(domain){
+    var cur = await getLocal([RULE_LOCK_KEY]);
+    var locks = cur[RULE_LOCK_KEY] || {};
+    var lock = locks[domain];
+    if(lock && lock.active){
+      return String(lock.mode || "strict").toLowerCase();
+    }
+    return "strict";
+  }
+
+  // Count distinct banners, not every matching element. A single cookie banner
+  // is usually several nested elements that all match (overlay > dialog >
+  // button bar), which inflated the counts. Keep only the outermost candidate
+  // of any nested group; hiding it hides the children anyway.
+  function cgKeepOutermostCandidates(list){
+    try {
+      if(!Array.isArray(list) || list.length < 2) return list || [];
+      return list.filter(function(item, i){
+        var el = item && item.el;
+        if(!el) return false;
+        for(var j = 0; j < list.length; j++){
+          if(j === i) continue;
+          var other = list[j] && list[j].el;
+          if(other && other !== el && other.contains && other.contains(el)){
+            return false; // nested inside another candidate -> drop
+          }
+        }
+        return true;
+      });
+    } catch(e){ return list || []; }
+  }
+
+  // Detect overlay/modal consent dialogs by CONTENT, not by id/class. Many
+  // modals (CNN/WBD terms, Sourcepoint, custom TCF) use generic/React class
+  // names the selector scan never looks at, so they were never even detected.
+  // This walks shallow from <body> (modals are portal-mounted near the top),
+  // and flags any fixed/absolute overlay whose text scores as consent/banner
+  // content. Depth- and breadth-limited so it stays cheap.
+  function cgScanOverlayModals(){
+    var out = [];
+    function inspect(el, depth){
+      if(depth > 4 || !el || el.nodeType !== 1) return;
+      try {
+        var pos = String(getComputedStyle(el).position || "").toLowerCase();
+        if((pos === "fixed" || pos === "absolute") && visible(el) && score(el) >= 4){
+          out.push({ el: el, score: score(el), selector_hint: "overlay-modal" });
+          return; // hide this whole overlay; no need to descend
+        }
+      } catch(e){}
+      var kids = el.children || [];
+      for(var j = 0; j < kids.length && j < 24; j++){ inspect(kids[j], depth + 1); }
+    }
+    try {
+      var roots = (document.body && document.body.children) ? document.body.children : [];
+      for(var i = 0; i < roots.length && i < 60; i++){ inspect(roots[i], 0); }
+    } catch(e){}
+    return out;
+  }
+
+  // Most robust modal catch: look at what's actually painted at several screen
+  // points (a centered modal is on top there), then walk up to the fixed/
+  // absolute overlay that reads as consent content and hide it. This does not
+  // depend on the modal's class name or DOM depth -- it finds it by where it
+  // renders, which is why it catches custom modals (CNN/WBD terms) the
+  // selector scan and shallow walk missed.
+  function cgScanByHitTest(){
+    var out = [];
+    var seen = [];
+    function add(el){ if(el && seen.indexOf(el) < 0){ seen.push(el); out.push({ el: el, score: score(el) || 20, selector_hint: "hit-test" }); } }
+    try {
+      var W = window.innerWidth || 0, H = window.innerHeight || 0;
+      var pts = [[0.5,0.5],[0.5,0.35],[0.5,0.65],[0.5,0.2],[0.5,0.8],[0.25,0.5],[0.75,0.5]];
+      pts.forEach(function(p){
+        try {
+          var el = document.elementFromPoint(Math.round(W * p[0]), Math.round(H * p[1]));
+          var cur = el;
+          var best = null;
+          for(var i = 0; i < 14 && cur && cur !== document.body && cur !== document.documentElement; i++){
+            try {
+              var pos = String(getComputedStyle(cur).position || "").toLowerCase();
+              if((pos === "fixed" || pos === "absolute" || pos === "sticky") && score(cur) >= 4){
+                best = cur; // keep climbing to the OUTERMOST consent overlay (backdrop)
+              }
+            } catch(e2){}
+            cur = cur.parentElement;
+          }
+          if(best) add(best);
+        } catch(e){}
+      });
+    } catch(e){}
+    return out;
+  }
+
+  // For each matched banner element, also target its positioned overlay
+  // ancestors (fixed/absolute/sticky) that STILL contain consent/banner text
+  // (score-gated). This hides the whole modal + backdrop, not just the inner
+  // text, which is what left modals like CNN's on screen. Score-gating means we
+  // never touch ordinary layout containers or nav bars that lack consent text.
+  function cgExpandModalWrappers(list){
+    if(!Array.isArray(list) || !list.length) return list || [];
+    var out = list.slice();
+    var seen = [];
+    list.forEach(function(item){ if(item && item.el) seen.push(item.el); });
+    function known(el){ for(var i=0;i<seen.length;i++){ if(seen[i]===el) return true; } return false; }
+    list.forEach(function(item){
+      var el = item && item.el;
+      var cur = el && el.parentElement;
+      for(var i = 0; i < 10 && cur && cur !== document.body && cur !== document.documentElement; i++){
+        try {
+          if(!known(cur)){
+            var pos = "";
+            try { pos = String(getComputedStyle(cur).position || "").toLowerCase(); } catch(e2){}
+            if((pos === "fixed" || pos === "absolute" || pos === "sticky") && score(cur) >= 4){
+              seen.push(cur);
+              out.push({ el: cur, score: 12, selector_hint: "modal-wrapper" });
+            }
+          }
+        } catch(e){}
+        cur = cur.parentElement;
+      }
+    });
+    return out;
+  }
+
+  // HARD SAFETY VETO. A real consent banner/modal is small and self-contained:
+  // short text, few links, no page landmarks. Page content (BBC's main column,
+  // an article body, a nav-heavy wrapper) is the opposite. If an element looks
+  // like actual page content we NEVER hide or remove it, no matter what a scan
+  // said -- this is what stops the "whole site went blank" failure. Every scan
+  // source funnels through suppressCandidates, so vetoing here covers them all.
+  function cgIsPageContent(el){
+    try {
+      if(!el || el.nodeType !== 1) return true;
+      if(el === document.body || el === document.documentElement) return true;
+      // Structural landmarks are never a banner.
+      try { if(el.querySelector && el.querySelector("main, [role='main'], article, header, footer, nav")) return true; } catch(e0){}
+      try { if(el.matches && el.matches("main, [role='main'], article, header, footer, nav")) return true; } catch(e0b){}
+      // Real banners are short; page content is long.
+      var txt = String(el.innerText || el.textContent || "");
+      if(txt.length > 1500) return true;
+      // Real banners have a handful of links; page/nav wrappers have many.
+      var links = 0;
+      try { links = el.querySelectorAll ? el.querySelectorAll("a[href]").length : 0; } catch(e1){}
+      if(links > 10) return true;
+      // Full-bleed AND taller than the viewport => a page wrapper, not a strip
+      // or a centered modal (a modal backdrop is ~= viewport height, not taller).
+      try {
+        var r = el.getBoundingClientRect();
+        var vw = window.innerWidth || 1, vh = window.innerHeight || 1;
+        if(r && (r.width / vw) > 0.95 && r.height > vh * 1.15) return true;
+      } catch(e2){}
+      return false;
+    } catch(e){ return false; }
+  }
+
+  // Text of an actual consent CONTROL (a short button/link label like "Accept",
+  // "Reject all", "Manage choices"). Prose that merely mentions these words is
+  // long and won't match the length gate.
+  function cgConsentControlText(raw){
+    var t = String(raw || "").toLowerCase().replace(/\s+/g, " ").trim();
+    if(!t || t.length > 42) return false;
+    return /\b(accept|agree|i agree|i accept|reject|decline|deny|allow|got it|understood|i understand|manage|preferences|choices|opt.?out|opt.?in|consent|accept all|reject all|allow all|deny all|only necessary|necessary only|save (?:my )?(?:preferences|choices|settings)|do not sell)\b/.test(t);
+  }
+
+  // Does the element contain a real consent action control? Consent banners have
+  // Accept/Reject/Manage buttons; a discussion post has Reply/Like/Edit buttons.
+  function cgHasConsentControl(el){
+    try {
+      if(!el || !el.querySelectorAll) return false;
+      var nodes = el.querySelectorAll("button, a[href], [role='button'], input[type='button'], input[type='submit']");
+      for(var i = 0; i < nodes.length && i < 120; i++){
+        var n = nodes[i];
+        var label = n.innerText || n.textContent || n.value || "";
+        if(!label && n.getAttribute) label = n.getAttribute("aria-label") || "";
+        if(cgConsentControlText(label)) return true;
+      }
+    } catch(e){}
+    return false;
+  }
+
+  // Known consent-management platforms / cookie-notice frameworks. These id/class
+  // signatures are unambiguous, so we trust them without a control check.
+  function cgIsKnownCmp(el){
+    try {
+      var hay = String(el.id || "") + " " + (typeof el.className === "string" ? el.className : "");
+      try { hay += " " + (el.getAttribute("data-testid") || "") + " " + (el.getAttribute("aria-label") || ""); } catch(e0){}
+      hay = hay.toLowerCase();
+      return /onetrust|optanon|cookiebot|cybot|trustarc|truste|evidon|didomi|quantcast|qc-cmp|usercentrics|osano|sourcepoint|sp_message|sp-message|sp-ccpa|sp-gdpr|sp_choice|cmpbox|privacy[-_]?manager|consent[-_]?manager|cookie-?law|cookie-?consent|cookieconsent|cookie-?banner|klaro|cookiefirst|termly|iubenda|complianz|borlabs|cookie-?notice|funding-?choices|googlefc/.test(hay);
+    } catch(e){ return false; }
+  }
+
+  // Real cookie banners and consent modals are OVERLAYS: position fixed/sticky,
+  // or a large high-z-index absolute layer (a modal + backdrop). Inline page
+  // content -- article bodies, discussion posts, reply boxes -- is statically
+  // positioned in normal flow. Requiring overlay-ness means we can never hide
+  // ordinary coursework/content even if it happens to contain consent words or
+  // a stray "Manage"/"Preferences" link.
+  function cgIsOverlayish(el){
+    try {
+      var cur = el, vw = window.innerWidth || 1, vh = window.innerHeight || 1;
+      for(var i = 0; i < 6 && cur && cur.nodeType === 1 && cur !== document.body; i++){
+        var cs = getComputedStyle(cur);
+        var pos = String(cs.position || "").toLowerCase();
+        if(pos === "fixed" || pos === "sticky") return true;
+        if(pos === "absolute"){
+          var r = cur.getBoundingClientRect();
+          var z = parseInt(cs.zIndex, 10);
+          if((r.width * r.height) > (vw * vh * 0.04) || (z && z >= 100)) return true;
+        }
+        cur = cur.parentElement;
+      }
+    } catch(e){}
+    return false;
+  }
+
+  function cgTextLower(el){
+    try { return String(el.innerText || el.textContent || "").toLowerCase(); } catch(e){ return ""; }
+}
+
+  // NEVER hide sign-in / account / OAuth-consent UI. A login or "Allow app to
+  // access your account" screen looks modal-ish, sits in an overlay, and can
+  // carry privacy/terms wording plus an Allow/Continue button -- but hiding it
+  // locks the user out of their account (Gmail, Microsoft, Apple, etc.). This is
+  // distinct from cookie consent and must always stay visible.
+  function cgIsAuthSurface(el){
+    try {
+      if(el.querySelector && el.querySelector("input[type='password']")) return true;
+      var t = cgTextLower(el);
+      if(!t) return false;
+      if(/\b(sign in|signin|sign-in|log in|login|log-in|sign up|signup|create account|choose an account|use another account|stay signed in|keep me signed in|forgot (your )?password|reset password|two.?factor|2-step|verification code|one-?time (code|passcode)|enter (your )?(password|email|code))\b/.test(t)) return true;
+      if(/\b(wants to access|to access your|will be able to|allow .{0,30} to access|grant .{0,30} access|sign in with (google|apple|facebook|microsoft|github)|continue with (google|apple|facebook|microsoft|github))\b/.test(t)) return true;
+      return false;
+    } catch(e){ return false; }
+  }
+
+  // Whole-page identity/auth hosts: never suppress anything here at all.
+  function cgHostIsAuth(){
+    try {
+      var h = String(location.hostname || "").toLowerCase();
+      return /(^|\.)accounts\.google\.com$|(^|\.)consent\.(google|youtube)\.com$|(^|\.)login\.|(^|\.)signin\.|(^|\.)sso\.|(^|\.)auth\.|(^|\.)oauth|(^|\.)id\.|appleid\.apple\.com|login\.live\.com|login\.microsoftonline\.com|okta\.com|auth0\.com|duosecurity\.com/.test(h);
+    } catch(e){ return false; }
+  }
+
+  // A real cookie/consent banner is specifically about cookies or privacy law --
+  // not merely "allow"/"agree", which also appear on login and OAuth screens.
+  function cgMentionsCookieConsent(el){
+    try {
+      var t = cgTextLower(el);
+      return /\bcookies?\b|\bgdpr\b|\bccpa\b|consent to (the )?(use of )?cookies|we use cookies|we value your privacy|cookie (policy|preferences|settings|consent|notice)|privacy preferences|manage (your )?(privacy|consent)|legitimate interest|tracking technolog|your privacy choices|do not sell/.test(t);
+    } catch(e){ return false; }
+  }
+
+  function suppressCandidates(candidates){
+    var suppressed = 0;
+    candidates.forEach(function(item){
+      try {
+        var el = item && item.el;
+        if(!el) return;
+        // Never touch real page content, whatever the scan claimed.
+        if(cgIsPageContent(el)) return;
+        // Never hide login / account / OAuth-consent UI -- that locks users out.
+        if(cgIsAuthSurface(el)) return;
+        // Only overlays (fixed/sticky/large absolute) can be banners; inline
+        // content in normal flow is never suppressed.
+        if(!cgIsOverlayish(el)) return;
+        // Must actually be a cookie/consent banner: a known consent framework, OR
+        // an overlay that specifically mentions cookies/consent AND carries a real
+        // accept/reject/manage control. "Allow"/"agree" alone is not enough --
+        // that also appears on sign-in and OAuth screens.
+        if(!cgIsKnownCmp(el) && !(cgMentionsCookieConsent(el) && cgHasConsentControl(el))) return;
+        var already = el.getAttribute && el.getAttribute("data-cookiegate-banner-suppressed") === "1";
+
+        // Always (re)apply hiding -- some consent modals re-set display:block on
+        // themselves to defeat blockers, so we re-hide on every scan, not just
+        // the first time.
+        try {
+          el.style.setProperty("display", "none", "important");
+          el.style.setProperty("visibility", "hidden", "important");
+          el.style.setProperty("opacity", "0", "important");
+          el.style.setProperty("pointer-events", "none", "important");
+          el.style.setProperty("max-height", "0", "important");
+        } catch(e2){}
+
+        // DOM removal is irreversible for the page's lifetime, so restrict it to
+        // UNAMBIGUOUS consent frameworks (OneTrust, Sourcepoint, etc.) where a
+        // false positive is effectively impossible. Everything else is only
+        // hidden via CSS above -- fully reversible, and re-applied every scan so
+        // re-showing scripts are still defeated.
+        var hint = String(item.selector_hint || "");
+        if((hint === "hit-test" || hint === "overlay-modal" || hint === "modal-wrapper") && cgIsKnownCmp(el)){
+          try { if(el.parentNode){ el.parentNode.removeChild(el); } } catch(e3){}
+        }
+
+        if(!already){
+          try { el.setAttribute && el.setAttribute("data-cookiegate-banner-suppressed", "1"); } catch(e4){}
+          suppressed++;
+        }
+      } catch(e){}
+    });
+    return suppressed;
+  }
+
+
+  function cgV63String(value){
+    return String(value || "");
+  }
+
+  function cgV63Lower(value){
+    return cgV63String(value).toLowerCase();
+  }
+
+  function cgV63Attr(el, name){
+    try { return el && el.getAttribute ? cgV63String(el.getAttribute(name)) : ""; } catch(e){ return ""; }
+  }
+
+  function cgV63NodeHay(el){
+    try {
+      var parts = [
+        el && el.id,
+        el && el.className,
+        cgV63Attr(el, "role"),
+        cgV63Attr(el, "aria-label"),
+        cgV63Attr(el, "title"),
+        cgV63Attr(el, "data-testid"),
+        cgV63Attr(el, "data-cy"),
+        cgV63Attr(el, "data-test"),
+        cgV63Attr(el, "src"),
+        el && el.textContent
+      ];
+      return cgV63Lower(parts.join(" ").slice(0, 12000));
+    } catch(e){
+      return "";
+    }
+  }
+
+  function cgV63Visible(el){
+    try {
+      if(!el || el === document.documentElement || el === document.body) return false;
+      if(!document.documentElement.contains(el)) return false;
+      var cs = getComputedStyle(el);
+      if(!cs) return false;
+      if(cs.display === "none") return false;
+      if(cs.visibility === "hidden") return false;
+      if(Number(cs.opacity || "1") < 0.03) return false;
+      var r = el.getBoundingClientRect();
+      if(!r) return false;
+      if(r.width < 40 || r.height < 20) return false;
+      return true;
+    } catch(e){
+      return false;
+    }
+  }
+
+  function cgV63StrongKnownVendor(hay){
+    return /sourcepoint|sp_message|sp-ccpa|sp-gdpr|sp_choice|onetrust|didomi|osano|quantcast|qc-cmp|trustarc|truste|cookiebot|privacy-manager|privacy_manager|consent-manager|consent_manager/.test(hay);
+  }
+
+  function cgV63HasConsentLanguage(hay){
+    if(!hay) return false;
+
+    if(cgV63StrongKnownVendor(hay)) return true;
+
+    var primary =
+      /\bcookie\b|\bcookies\b|\bconsent\b|\bprivacy\b|\bgdpr\b|\bccpa\b|do not sell|privacy choices|privacy preferences|manage choices|manage preferences|legitimate interest|your choices|ad choices|privacy manager/.test(hay);
+
+    if(!primary) return false;
+
+    var action =
+      /\baccept\b|\bagree\b|\bcontinue\b|\bdecline\b|\breject\b|\bmanage\b|\bpreferences\b|\bchoices\b|\bsettings\b|\bclose\b|\bsave\b|\bconfirm\b|\ballow\b|\bdisagree\b/.test(hay);
+
+    var container =
+      /banner|modal|dialog|notice|overlay|popup|pop-up|message|container|cmp|consent|privacy|cookie/.test(hay);
+
+    return action || container;
+  }
+
+  function cgV63LooksOverlayLike(el, hay){
+    try {
+      if(cgV63StrongKnownVendor(hay)) return true;
+
+      var cs = getComputedStyle(el);
+      var pos = cgV63Lower(cs && cs.position);
+      var z = parseInt((cs && cs.zIndex) || "0", 10);
+      var r = el.getBoundingClientRect();
+      var vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+      var vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+
+      if(pos === "fixed" || pos === "sticky"){
+        if(isNaN(z) || z >= 1) return true;
+      }
+
+      if(r && vw && vh){
+        var area = (r.width * r.height) / Math.max(1, vw * vh);
+        if(area >= 0.12 && (!isNaN(z) && z >= 10)) return true;
+        if(area >= 0.22 && cgV63HasConsentLanguage(hay)) return true;
+      }
+
+      var role = cgV63Lower(cgV63Attr(el, "role"));
+      if(role === "dialog" || role === "alertdialog") return true;
+
+      return /banner|modal|dialog|notice|overlay|popup|pop-up|message|container|cmp|consent|privacy|cookie/.test(hay);
+    } catch(e){
+      return false;
+    }
+  }
+
+  function cgV63CandidateElement(el){
+    try {
+      if(!el || el === document.documentElement || el === document.body) return null;
+
+      var cur = el;
+      var best = el;
+      var steps = 0;
+
+      while(cur && cur.parentElement && cur.parentElement !== document.body && steps < 6){
+        var h = cgV63NodeHay(cur);
+        if(cgV63StrongKnownVendor(h) || cgV63LooksOverlayLike(cur, h)){
+          best = cur;
+        }
+        cur = cur.parentElement;
+        steps++;
+      }
+
+      if(best === document.documentElement || best === document.body) return el;
+      return best;
+    } catch(e){
+      return el;
+    }
+  }
+
+  function cgV63PushCandidate(out, seen, el, hint, score){
+    try {
+      var target = cgV63CandidateElement(el);
+      if(!target || target === document.documentElement || target === document.body) return;
+      if(seen.has(target)) return;
+
+      var hay = cgV63NodeHay(target) + " " + cgV63NodeHay(el);
+      var strong = cgV63StrongKnownVendor(hay);
+
+      if(!strong && !cgV63HasConsentLanguage(hay)) return;
+      if(!cgV63Visible(target) && !strong) return;
+
+      seen.add(target);
+      out.push({
+        el: target,
+        score: score || (strong ? 120 : 95),
+        selector_hint: "v63:" + hint
+      });
+    } catch(e){}
+  }
+
+  function cgV63ExtraCandidates(){
+    var out = [];
+    var seen = new Set();
+
+    var selectors = [
+      "[id*='sp_message' i]",
+      "[class*='sp_message' i]",
+      "[id*='sourcepoint' i]",
+      "[class*='sourcepoint' i]",
+      "[id*='sp-ccpa' i]",
+      "[class*='sp-ccpa' i]",
+      "[id*='sp-gdpr' i]",
+      "[class*='sp-gdpr' i]",
+      "[class*='sp_choice' i]",
+      "[id*='qc-cmp' i]",
+      "[class*='qc-cmp' i]",
+      "[id*='quantcast' i]",
+      "[class*='quantcast' i]",
+      "[id*='truste' i]",
+      "[class*='truste' i]",
+      "[id*='trustarc' i]",
+      "[class*='trustarc' i]",
+      "[id*='privacy-manager' i]",
+      "[class*='privacy-manager' i]",
+      "[id*='privacy_manager' i]",
+      "[class*='privacy_manager' i]",
+      "[id*='consent-manager' i]",
+      "[class*='consent-manager' i]",
+      "[id*='consent_manager' i]",
+      "[class*='consent_manager' i]",
+      "[id*='cookie-consent' i]",
+      "[class*='cookie-consent' i]",
+      "[data-testid*='cookie' i]",
+      "[data-testid*='consent' i]",
+      "[data-testid*='privacy' i]",
+      "[data-cy*='cookie' i]",
+      "[data-cy*='consent' i]",
+      "iframe[src*='consent' i]",
+      "iframe[src*='privacy' i]",
+      "iframe[src*='sourcepoint' i]",
+      "iframe[src*='onetrust' i]",
+      "iframe[src*='quantcast' i]",
+      "dialog",
+      "[role='dialog']",
+      "[role='alertdialog']"
+    ];
+
+    selectors.forEach(function(sel){
+      try {
+        Array.prototype.slice.call(document.querySelectorAll(sel)).forEach(function(el){
+          cgV63PushCandidate(out, seen, el, sel, 130);
+        });
+      } catch(e){}
+    });
+
+    try {
+      Array.prototype.slice.call(document.querySelectorAll("div, aside, section, article, form")).forEach(function(el){
+        var hay = cgV63NodeHay(el);
+        if(!cgV63HasConsentLanguage(hay)) return;
+        if(!cgV63LooksOverlayLike(el, hay)) return;
+        cgV63PushCandidate(out, seen, el, "broad-consent-overlay", 100);
+      });
+    } catch(e){}
+
+    return out;
+  }
+
+  function cgV63MergeCandidates(base){
+    var merged = [];
+    var seen = new Set();
+
+    try {
+      (Array.isArray(base) ? base : []).forEach(function(item){
+        if(!item || !item.el) return;
+        if(seen.has(item.el)) return;
+        seen.add(item.el);
+        merged.push(item);
+      });
+    } catch(e){}
+
+    try {
+      cgV63ExtraCandidates().forEach(function(item){
+        if(!item || !item.el) return;
+        if(seen.has(item.el)) return;
+        seen.add(item.el);
+        merged.push(item);
+      });
+    } catch(e){}
+
+    return merged;
+  }
+
+  function cgV63ReleasePageLocks(){
+    try {
+      [document.documentElement, document.body].forEach(function(el){
+        if(!el || !el.style) return;
+        var cs = getComputedStyle(el);
+        if(cs && (cs.overflow === "hidden" || cs.overflowY === "hidden")){
+          el.style.setProperty("overflow", "auto", "important");
+          el.style.setProperty("overflow-y", "auto", "important");
+        }
+      });
+    } catch(e){}
+  }
+
+  // COOKIEGATE_V63_CNN_SOURCEPOINT_RUNTIME_SUPPRESSION_HELPERS
+
+  async function scanAndSuppress(reason){
+    var domain = host();
+    if(!domain) return;
+
+    // Identity/auth hosts (accounts.google.com, login.*, signin.*, sso.*, etc.):
+    // never suppress anything -- these pages are logins and OAuth flows, and a
+    // false hide locks the user out of their account.
+    if(cgHostIsAuth()) return;
+
+    var mode = await activeRuleMode(domain);
+    var candidates = cgV63MergeCandidates(scanCandidates().concat(cgScanOverlayModals()).concat(cgScanByHitTest()));
+    // Modal-aware expansion: many consent UIs (CNN/WBD terms modal, Sourcepoint,
+    // TCF modals) render the matched text inside a fixed/absolute OVERLAY with a
+    // dark backdrop. Hiding just the inner text element leaves the modal + its
+    // backdrop on screen. So for each matched element, also target its
+    // positioned overlay ancestors that still read as banner/consent content
+    // (score-gated so we never hide ordinary page containers or fixed nav bars
+    // that don't contain consent text).
+    try { candidates = cgExpandModalWrappers(candidates); } catch(e){}
+    try {
+      if(cgV74NavigationSuppressionPaused()){
+        candidates = [];
+        try { if(typeof cgV63ReleasePageLocks === "function") cgV63ReleasePageLocks(); } catch(e){}
+      } else {
+        candidates = cgV74NavigationSafeCandidates(candidates);
+      }
+    } catch(e){}
+    var allowSuppression = modeAllowsSuppression(mode);
+    var suppressed = allowSuppression ? suppressCandidates(candidates) : 0;
+    try { if(allowSuppression && suppressed > 0) cgV63ReleasePageLocks(); } catch(e){}
+    // Consent modals lock the page (body/html get position:fixed + overflow
+    // hidden). After hiding the modal, restore scrolling so the page is usable.
+    if(suppressed > 0){
+      try {
+        [document.body, document.documentElement].forEach(function(b){
+          if(!b) return;
+          var cs = getComputedStyle(b);
+          if(cs.overflow === "hidden" || cs.overflowY === "hidden"){ b.style.setProperty("overflow", "auto", "important"); }
+          if(cs.position === "fixed"){ b.style.setProperty("position", "static", "important"); b.style.setProperty("top", "auto", "important"); }
+        });
+      } catch(e){}
+    }
+    var detected = candidates.length > 0;
+    var now = iso();
+
+    var status = suppressed > 0 ? "suppressed" : (detected ? "detected" : "clear");
+    var fp = domain + "::" + status + "::" + suppressed + "::" + candidates.map(function(x){ return x.selector_hint + ":" + x.score; }).join("|");
+
+    if(fp === lastFingerprint && Date.now() - lastWrite < MIN_WRITE_MS) return;
+
+    lastFingerprint = fp;
+    lastWrite = Date.now();
+
+    var cur = await getLocal([CURRENT_KEY, SESSION_KEY, TIMELINE_KEY, STATS_KEY]);
+    var current = cur[CURRENT_KEY] || {};
+    var session = cur[SESSION_KEY] || {};
+    var timeline = Array.isArray(cur[TIMELINE_KEY]) ? cur[TIMELINE_KEY] : [];
+    var stats = cur[STATS_KEY] || {};
+
+    var ds = stats[domain] || {
+      domain: domain,
+      scans: 0,
+      detected: 0,
+      suppressed: 0,
+      last_scan_utc: null,
+      last_detected_utc: null,
+      last_suppressed_utc: null,
+      last_status: null
+    };
+
+    var ss = session[domain] || {
+      domain: domain,
+      suppressed: 0,
+      detected: 0,
+      scans: 0,
+      started_utc: now,
+      last_utc: null
+    };
+
+    ds.scans = Number(ds.scans || 0) + 1;
+    ds.last_scan_utc = now;
+    ds.last_status = status;
+
+    ss.scans = Number(ss.scans || 0) + 1;
+    ss.last_utc = now;
+
+    if(detected){
+      ds.detected = Number(ds.detected || 0) + candidates.length;
+      ss.detected = Number(ss.detected || 0) + candidates.length;
+      ds.last_detected_utc = now;
+    }
+
+    if(suppressed > 0){
+      ds.suppressed = Number(ds.suppressed || 0) + suppressed;
+      ss.suppressed = Number(ss.suppressed || 0) + suppressed;
+      ds.last_suppressed_utc = now;
+    }
+
+    current[domain] = {
+      schema: "cookiegate.banner.current.ledger.v32",
+      type: "banner.current",
+      event_type: "banner.current",
+      utc: now,
+      stamp_utc: now,
+      host: domain,
+      domain: domain,
+      mode: mode,
+      status: status,
+      detected: detected,
+      candidate_count: candidates.length,
+      suppressed_count: suppressed,
+      reason: reason,
+      producer: "COOKIEGATE_BANNER_SUPPRESSION_RUNTIME_V32"
+    };
+
+    var event = {
+      schema: "cookiegate.banner.timeline.event.v32",
+      type: suppressed > 0 ? "banner.suppressed" : "banner.scan",
+      event_type: suppressed > 0 ? "banner.suppressed" : "banner.scan",
+      utc: now,
+      stamp_utc: now,
+      host: domain,
+      domain: domain,
+      mode: mode,
+      status: status,
+      detected: detected,
+      candidate_count: candidates.length,
+      suppressed_count: suppressed,
+      reason: reason,
+      producer: "COOKIEGATE_BANNER_SUPPRESSION_RUNTIME_V32"
+    };
+
+    timeline.unshift(event);
+    timeline = timeline.slice(0, MAX_TIMELINE);
+
+    stats[domain] = ds;
+    session[domain] = ss;
+
+    var patch = {};
+    patch[CURRENT_KEY] = current;
+    patch[SESSION_KEY] = session;
+    patch[TIMELINE_KEY] = timeline;
+    patch[STATS_KEY] = stats;
+
+    await setLocal(patch);
+  }
+
+  function boot(){
+    scanAndSuppress("startup");
+    // Dense early scans so a late-injected modal is hidden within a fraction of
+    // a second instead of after a multi-second gap.
+    [80, 180, 300, 450, 650, 900, 1200, 1600, 2100, 2800, 3600, 4800, 6500, 9000, 13000, 20000].forEach(function(ms){
+      setTimeout(function(){ scanAndSuppress("settle_" + ms); }, ms);
+    });
+
+    try {
+      var moTimer = null;
+      var obs = new MutationObserver(function(){
+        clearTimeout(moTimer);
+        // Near-immediate: consent modals are injected in one mutation, so react
+        // fast rather than waiting.
+        moTimer = setTimeout(function(){ scanAndSuppress("mutation_observed"); }, 40);
+      });
+      obs.observe(document.documentElement || document.body, { childList: true, subtree: true });
+      // Keep observing the whole time the tab is open (SPA re-renders/re-mounts).
+    } catch(e){}
+
+    // Steady re-scan for late/re-mounted banners.
+    try { setInterval(function(){ scanAndSuppress("interval"); }, 1200); } catch(e){}
+
+    // Re-scan when the tab regains focus/visibility (also covers the case where
+    // opening the popup and returning should immediately clean the page).
+    try {
+      document.addEventListener("visibilitychange", function(){ if(!document.hidden){ scanAndSuppress("visibility"); } }, false);
+      window.addEventListener("focus", function(){ scanAndSuppress("focus"); }, false);
+      window.addEventListener("pageshow", function(){ scanAndSuppress("pageshow"); }, false);
+    } catch(e){}
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", boot, { once: true });
+  } else {
+    boot();
+  }
+})();
+
+try {
+  window.CookieGateV63CnnSourcepointRuntimeSuppression = {
+    ok: true,
+    marker: "COOKIEGATE_V63_CNN_SOURCEPOINT_RUNTIME_SUPPRESSION",
+    owner: "banner_suppression_runtime_v32.js",
+    note: "Augments active suppression candidates for Sourcepoint/CNN/common CMP overlays without touching popup semantics."
+  };
+} catch(e){}
+
+// COOKIEGATE_V63_CNN_SOURCEPOINT_RUNTIME_SUPPRESSION
+
+function cgV74NavLower(value){
+  return String(value || "").toLowerCase();
+}
+
+function cgV74NavHost(){
+  try { return cgV74NavLower(window.location && window.location.hostname ? window.location.hostname : "").replace(/^\.+/, ""); } catch(e){ return ""; }
+}
+
+function cgV74HostEnds(host, suffix){
+  host = cgV74NavLower(host);
+  suffix = cgV74NavLower(suffix);
+  return host === suffix || host.endsWith("." + suffix);
+}
+
+function cgV74NavigationSuppressionPaused(){
+  try {
+    var h = cgV74NavHost();
+    var href = cgV74NavLower(window.location && window.location.href ? window.location.href : "");
+    if(!h) return true;
+    if(cgV74HostEnds(h, "google.com") && (href.indexOf("/search") >= 0 || h === "google.com" || h === "www.google.com")) return true;
+    if(cgV74HostEnds(h, "bing.com") && (href.indexOf("/search") >= 0 || h === "bing.com" || h === "www.bing.com")) return true;
+    if(cgV74HostEnds(h, "duckduckgo.com")) return true;
+    if(cgV74HostEnds(h, "yahoo.com") && href.indexOf("/search") >= 0) return true;
+    if(cgV74HostEnds(h, "chatgpt.com")) return true;
+    if(cgV74HostEnds(h, "openai.com")) return true;
+    if(cgV74HostEnds(h, "accounts.google.com")) return true;
+    if(cgV74HostEnds(h, "mail.google.com")) return true;
+    if(cgV74HostEnds(h, "login.microsoftonline.com")) return true;
+    if(/^login\./.test(h) || /^auth\./.test(h) || /^account\./.test(h) || /^accounts\./.test(h)) return true;
+    if(href.indexOf("/login") >= 0 || href.indexOf("/signin") >= 0 || href.indexOf("/auth") >= 0 || href.indexOf("/oauth") >= 0) return true;
+  } catch(e){}
+  return false;
+}
+
+function cgV74CandidateHay(el){
+  try {
+    if(!el) return "";
+    return cgV74NavLower([
+      el.id,
+      el.className,
+      el.getAttribute && el.getAttribute("role"),
+      el.getAttribute && el.getAttribute("aria-label"),
+      el.getAttribute && el.getAttribute("data-testid"),
+      el.getAttribute && el.getAttribute("data-test"),
+      el.getAttribute && el.getAttribute("data-cmp"),
+      el.getAttribute && el.getAttribute("data-consent"),
+      el.textContent
+    ].join(" "));
+  } catch(e){ return ""; }
+}
+
+function cgV74StrongConsentCandidate(el){
+  var hay = cgV74CandidateHay(el);
+  if(!hay) return false;
+  if(hay.indexOf("onetrust") >= 0) return true;
+  if(hay.indexOf("sourcepoint") >= 0 || hay.indexOf("sp_message") >= 0 || hay.indexOf("sp-message") >= 0) return true;
+  if(hay.indexOf("trustarc") >= 0 || hay.indexOf("truste") >= 0) return true;
+  if(hay.indexOf("quantcast") >= 0 || hay.indexOf("qc-cmp") >= 0) return true;
+  if(hay.indexOf("cookiebot") >= 0 || hay.indexOf("cookie-banner") >= 0 || hay.indexOf("cookie banner") >= 0) return true;
+  if(hay.indexOf("privacy manager") >= 0 || hay.indexOf("privacy preferences") >= 0) return true;
+  if(hay.indexOf("consent") >= 0 && hay.indexOf("cookie") >= 0) return true;
+  return false;
+}
+
+function cgV74NavigationCriticalCandidate(el){
+  try {
+    if(!el || cgV74StrongConsentCandidate(el)) return false;
+    // Consent walls are full-screen by design, so the ">55% of viewport"
+    // guard below would wrongly protect them. If the element's TEXT is clearly
+    // a cookie/consent prompt with an accept/agree/reject action, treat it as a
+    // suppressible overlay regardless of size (this is what lets CNN's
+    // class-less full-screen backdrop get hidden).
+    try {
+      var t = String(el.innerText || el.textContent || "").toLowerCase();
+      var consentWord = /\bcookie|\bconsent\b|\bprivacy\b|\bgdpr\b|\bccpa\b|legal terms/.test(t);
+      var actionWord = /\bagree\b|\baccept\b|\breject\b|\bdecline\b|\bmanage\b|\bcontinue\b|\ballow\b/.test(t);
+      if(consentWord && actionWord) return false;
+    } catch(eT){}
+    if(el.closest && el.closest("main,article,[role='main'],[role='search'],form,nav,header")) return true;
+    if(el.querySelector && el.querySelector("input[type='search'],input[name='q'],textarea,[contenteditable='true'],button[type='submit']")) return true;
+    var rect = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
+    if(rect && window.innerWidth && window.innerHeight){
+      var area = Math.max(0, rect.width) * Math.max(0, rect.height);
+      var viewport = Math.max(1, window.innerWidth * window.innerHeight);
+      if((area / viewport) > 0.55) return true;
+    }
+    if(el.querySelectorAll && el.querySelectorAll("a").length > 20) return true;
+  } catch(e){}
+  return false;
+}
+
+function cgV74NavigationSafeCandidates(candidates){
+  try {
+    if(!Array.isArray(candidates)) return [];
+    return candidates.filter(function(item){
+      try {
+        // Candidates are objects {el, score, selector_hint}; the DOM node is on
+        // .el. The original code tested item.nodeType (always undefined on the
+        // object), so it filtered out EVERY candidate and nothing was ever
+        // suppressed. Unwrap to the real element.
+        var el = (item && item.el) ? item.el : item;
+        if(!el || !el.nodeType || el.nodeType !== 1) return false;
+        if(cgV74NavigationCriticalCandidate(el)) return false;
+        return true;
+      } catch(e){ return false; }
+    });
+  } catch(e){ return []; }
+}
+
+try {
+  window.CookieGateV74NavigationSafetyFirefoxFirst = {
+    ok: true,
+    marker: "COOKIEGATE_V74_NAVIGATION_SAFETY_FIREFOX_FIRST",
+    search_and_auth_hosts_pause_banner_suppression: true,
+    filters_navigation_critical_candidates: true
+  };
+} catch(e){}
+
+// COOKIEGATE_V74_NAVIGATION_SAFETY_FIREFOX_FIRST
+</script>
+
+<script id="cg-reporter">
+  // Fill BBC article with many links so the page-content veto (>10 links) applies.
+  (function(){
+    var a=document.getElementById('f7');
+    if(a){var art=a.querySelector('article');var s='';for(var i=0;i<25;i++){s+='<a href="/story/'+i+'">Story '+i+'</a> ';}
+      var ph=art.innerHTML.replace('LINKS_PLACEHOLDER',s);art.innerHTML=ph;}
+  })();
+
+  function hidden(id){
+    var el=document.getElementById(id);
+    if(!el) return true; // removed from DOM
+    var cs=getComputedStyle(el);
+    if(cs.display==='none'||cs.visibility==='hidden'||Number(cs.opacity)===0) return true;
+    if(el.getAttribute('data-cookiegate-banner-suppressed')==='1') return true;
+    return false;
+  }
+
+  var cases=[
+    {id:'f1',label:'OneTrust cookie banner',expect:true},
+    {id:'f2',label:'Generic "we use cookies" bar',expect:true},
+    {id:'f3',label:'Sourcepoint cookie modal',expect:true},
+    {id:'f4',label:'Gmail OAuth "Allow access"',expect:false},
+    {id:'f5',label:'Login modal (password)',expect:false},
+    {id:'f6',label:'Discussion post ("informed consent")',expect:false},
+    {id:'f7',label:'BBC-style main content',expect:false},
+    {id:'f8',label:'Footer privacy links',expect:false}
+  ];
+
+  function report(){
+    var box=document.getElementById('cg-results');
+    var pass=0, fail=0, rows='';
+    cases.forEach(function(c){
+      var h=hidden(c.id);
+      var ok=(h===c.expect);
+      ok?pass++:fail++;
+      rows+='<div class="row '+(ok?'pass':'fail')+'"><span>'+(ok?'PASS':'FAIL')+' — '+c.label+'</span><span>'+(c.expect?'should hide':'should keep')+' / '+(h?'hidden':'kept')+'</span></div>';
+    });
+    box.innerHTML='<h1>CookieGate live suppression test</h1>'+rows+
+      '<div class="verdict" style="color:'+(fail===0?'#22c55e':'#ef4444')+'">'+pass+'/'+(pass+fail)+' passed'+(fail===0?' ✓ ALL GOOD':' ✗ CHECK FAILURES')+'</div>';
+  }
+  // Give boot()'s dense scans + MutationObserver time to act, then report.
+  window.addEventListener('load',function(){ setTimeout(report,1600); });
+</script>
+</body></html>

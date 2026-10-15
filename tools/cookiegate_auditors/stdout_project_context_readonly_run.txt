@@ -1,0 +1,4 @@
+COOKIEGATE_PROJECT_CONTEXT_READONLY_AUDIT_COMPLETE
+AUDIT_ROOT=C:\dev\cookiegate\proofs\audits\cookiegate_project_context_readonly_20260614T173714Z
+SUMMARY=C:\dev\cookiegate\proofs\audits\cookiegate_project_context_readonly_20260614T173714Z\summary.txt
+AUDIT_JSON=C:\dev\cookiegate\proofs\audits\cookiegate_project_context_readonly_20260614T173714Z\audit.json

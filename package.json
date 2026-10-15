@@ -1,0 +1,13 @@
+{
+  "name": "cookiegate",
+  "version": "0.1.8",
+  "private": true,
+  "description": "CookieGate browser extension - source, tests and store build",
+  "scripts": {
+    "test": "node tests/run_all.mjs",
+    "build": "node tools/build/build_release.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "24.1.3"
+  }
+}
